@@ -470,6 +470,24 @@ CREATE POLICY "Allow all on rent_vault_config" ON public.rent_vault_config FOR A
 
 
 -- ==========================================
+-- 4.5. GRANT ROLE PRIVILEGES (REQUIRED FOR ANON / PUBLISHABLE KEY)
+-- ==========================================
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.classes TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.students TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.teachers TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.pointage_logs TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.attendance_records TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.expenses TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.payments TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.timetable_config TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.rent_vault_config TO anon, authenticated;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+
+-- Reload PostgREST schema cache
+NOTIFY pgrst, 'reload schema';
+
+-- ==========================================
 -- 5. PERFORMANCE INDEXES
 -- ==========================================
 CREATE INDEX IF NOT EXISTS idx_students_class_id ON public.students(class_id);
@@ -481,7 +499,7 @@ CREATE INDEX IF NOT EXISTS idx_payments_student_id ON public.payments(student_id
 
 
 -- =========================================================
--- 6. INITIAL SEED DATA FOR SAMY ACADEMY
+-- 6. INITIAL SEED DATA FOR SAMY ACADEMY (NON-DESTRUCTIVE)
 -- =========================================================
 
 INSERT INTO public.classes (id, name, price, description, teacher_id) VALUES
@@ -490,42 +508,23 @@ INSERT INTO public.classes (id, name, price, description, teacher_id) VALUES
 ('class-3', 'BEM - Mathématiques', 1800, 'Préparation complète à l''épreuve de maths du Brevet BEM.', 'teacher-1'),
 ('class-4', 'Lycée - Anglais Général', 1500, 'Amélioration de l''anglais écrit, parlé et grammaire de niveau secondaire.', 'teacher-4'),
 ('class-5', 'Français - Soutien Moyen', 1600, 'Vocabulaire, conjugaison et productions d''écrits pour le collège.', 'teacher-3')
-ON CONFLICT (id) DO UPDATE SET 
-  name = EXCLUDED.name, 
-  price = EXCLUDED.price, 
-  description = EXCLUDED.description,
-  teacher_id = EXCLUDED.teacher_id;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.teachers (id, name, email, subject, salary, payment_status, last_payment_date, token_id) VALUES
 ('teacher-1', 'Prof. Slimane Belkacem', 's.belkacem@samyacademy.dz', 'Mathematics', 45000, 'Paid', '2026-06-05', 'T201'),
 ('teacher-2', 'Dr. Yasmina Mansouri', 'y.mansouri@samyacademy.dz', 'Physics', 48050, 'Unpaid', NULL, 'T202'),
 ('teacher-3', 'Prof. Mourad Bouzidi', 'm.bouzidi@samyacademy.dz', 'French', 38000, 'Pending', NULL, 'T203'),
 ('teacher-4', 'Prof. Amina Ouchene', 'a.ouchene@samyacademy.dz', 'English', 35000, 'Paid', '2026-06-08', 'T204')
-ON CONFLICT (id) DO UPDATE SET 
-  name = EXCLUDED.name, 
-  email = EXCLUDED.email, 
-  subject = EXCLUDED.subject, 
-  salary = EXCLUDED.salary, 
-  payment_status = EXCLUDED.payment_status, 
-  last_payment_date = EXCLUDED.last_payment_date,
-  token_id = EXCLUDED.token_id;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.students (id, name, parent_phone, payment_status, class_id, class_ids, token_id, current_month, paid_months) VALUES
 ('student-1', 'Abderrahmane Zaiti', '0661245892', 'Paid', 'class-1', '["class-1","class-2"]'::jsonb, 'S101', 1, '[1]'::jsonb),
 ('student-2', 'Leila Kaddour', '0555321456', 'Pending', 'class-1', '["class-1","class-3"]'::jsonb, 'S102', 1, '[1]'::jsonb),
 ('student-3', 'Yanis Amrani', '0772183495', 'Unpaid', 'class-2', '["class-2"]'::jsonb, 'S103', 1, '[1]'::jsonb),
 ('student-4', 'Fatma-Zohra Mansouri', '0561234567', 'Paid', 'class-3', '["class-3","class-4"]'::jsonb, 'S104', 1, '[1]'::jsonb),
-('student-5', 'Mohamed Amine Bouzidi', '0662895412', 'Pending', 'class-4', '["class-4","class-5"]'::jsonb, 'S105', 1, '[1]'::jsonb),
+('student-5', 'Amine Bouzidi', '0662895412', 'Pending', 'class-4', '["class-4","class-5"]'::jsonb, 'S105', 1, '[1]'::jsonb),
 ('student-6', 'Meriem Ouchene', '0770987654', 'Paid', 'class-5', '["class-5"]'::jsonb, 'S106', 1, '[1]'::jsonb),
 ('student-7', 'Anis Belkacem', '0551743621', 'Unpaid', 'class-2', '["class-2","class-1"]'::jsonb, 'S107', 1, '[1]'::jsonb),
 ('student-8', 'Khadidja Haddad', '0663152436', 'Paid', 'class-3', '["class-3"]'::jsonb, 'S108', 1, '[1]'::jsonb),
 ('student-9', 'Oussama Sifi', '0792345678', 'Unpaid', 'class-5', '["class-5"]'::jsonb, 'S109', 1, '[1]'::jsonb)
-ON CONFLICT (id) DO UPDATE SET 
-  name = EXCLUDED.name, 
-  parent_phone = EXCLUDED.parent_phone, 
-  payment_status = EXCLUDED.payment_status, 
-  class_id = EXCLUDED.class_id,
-  class_ids = EXCLUDED.class_ids,
-  token_id = EXCLUDED.token_id,
-  current_month = EXCLUDED.current_month,
-  paid_months = EXCLUDED.paid_months;
+ON CONFLICT (id) DO NOTHING;

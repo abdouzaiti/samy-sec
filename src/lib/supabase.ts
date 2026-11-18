@@ -26,10 +26,19 @@ const isValidHttpUrl = (val: string): boolean => {
 };
 
 export const getSupabaseConfig = () => {
+  let definedUrl = '';
+  let definedKey = '';
+  try {
+    definedUrl = process.env.SUPABASE_URL || '';
+    definedKey = process.env.SUPABASE_ANON_KEY || '';
+  } catch {
+    // ignore when process is unavailable
+  }
+
   const urlCandidates = [
     import.meta.env.VITE_SUPABASE_URL,
     import.meta.env.SUPABASE_URL,
-    typeof process !== 'undefined' ? process.env?.SUPABASE_URL : undefined
+    definedUrl
   ];
 
   const keyCandidates = [
@@ -39,7 +48,7 @@ export const getSupabaseConfig = () => {
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
     import.meta.env.SUPABASE_ANON_KEY,
     import.meta.env.SUPABASE_API_KEY,
-    typeof process !== 'undefined' ? process.env?.SUPABASE_ANON_KEY : undefined
+    definedKey
   ];
 
   let url = '';

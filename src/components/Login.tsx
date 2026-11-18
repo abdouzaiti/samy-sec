@@ -58,7 +58,7 @@ export function Login() {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="mohamed"
+                placeholder="director"
                 className={cn(
                   "w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all font-bold",
                    isRTL && "text-right"
@@ -99,40 +99,6 @@ export function Login() {
               )}
             </button>
           </form>
-
-          <div className="mt-8 pt-6 border-t border-slate-100">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest text-center mb-4">
-              {isRTL ? "Accès Rapide de Démo" : "Demo Quick Access"}
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setUsername('mohamed');
-                  setPassword('mostarunclub');
-                }}
-                className="p-3 bg-slate-50 border border-slate-200 hover:border-primary/40 hover:bg-slate-50/50 rounded-2xl flex flex-col items-center transition-all group"
-              >
-                <span className="text-xs font-black text-primary group-hover:text-primary/80">
-                  {isRTL ? "Dir. Mohamed" : "Dir. Mohamed"}
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium mt-0.5">mohamed</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setUsername('secretary');
-                  setPassword('samy123');
-                }}
-                className="p-3 bg-slate-50 border border-slate-200 hover:border-primary/40 hover:bg-slate-50/50 rounded-2xl flex flex-col items-center transition-all group"
-              >
-                <span className="text-xs font-black text-primary group-hover:text-primary/80">
-                  {isRTL ? "Secrétariat" : "Secretaries"}
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium mt-0.5">secretary</span>
-              </button>
-            </div>
-          </div>
         </div>
       </motion.div>
     </div>

@@ -142,7 +142,7 @@ export function Dashboard() {
   const pendingStudents: Student[] = [];
   const outstandingRevenue = 0;
 
-  // Confidential payroll info (Director Mohamed view only)
+  // Confidential payroll info (Director view only)
   const totalPayroll = teachers.reduce((acc, curr) => acc + curr.salary, 0);
   const schoolNetProfit = totalRevenue - totalPayroll;
 
@@ -242,7 +242,7 @@ export function Dashboard() {
                 ? "bg-amber-50 text-amber-800 border-amber-200" 
                 : "bg-blue-50 text-primary border-blue-200"
             )}>
-              {activeRole === 'director' ? "Mohamed" : "Secretaries"}
+              {activeRole === 'director' ? (isRTL ? "Directeur" : "Director") : "Secretaries"}
             </span>
           </div>
           <p className="text-slate-500 mt-2 text-base font-medium">
@@ -267,7 +267,7 @@ export function Dashboard() {
             )}
           >
             <Shield size={14} className={activeRole === 'director' ? "text-accent" : ""} />
-            {isRTL ? "Dir. Mohamed" : "Dir. Mohamed"}
+            {isRTL ? "Directeur" : "Director"}
           </button>
           <button
             onClick={() => switchRole('secretary')}
@@ -292,7 +292,7 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* ----------------- RENDER DIRECTEUR MOHAMED DASHBOARD ----------------- */}
+      {/* ----------------- RENDER DIRECTOR DASHBOARD ----------------- */}
       {activeRole === 'director' && (
         <div className="space-y-12 animate-in">
           

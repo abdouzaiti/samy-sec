@@ -781,7 +781,7 @@ export function Classes() {
         ) : (
           <div className="flex items-center gap-2 text-xs font-black text-slate-400 bg-slate-50 border border-slate-100 px-4 py-3 rounded-2xl">
             <AlertCircle size={15} className="text-amber-500" />
-            <span>Class creation reserved for Director Mohamed</span>
+            <span>{isRTL ? "Création réservée au Directeur" : "Class creation reserved for Director"}</span>
           </div>
         )}
       </header>

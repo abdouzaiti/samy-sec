@@ -23,9 +23,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (savedUserStr) {
       try {
         const savedUser = JSON.parse(savedUserStr);
-        if (savedUser && (savedUser.email?.includes('mohamed') || savedUser.email?.includes('secretary'))) {
-          setUser(savedUser);
-          setActiveRole(savedUser.role);
+        if (savedUser && (savedUser.role === 'director' || savedUser.role === 'secretary')) {
+          const normalizedUser: User = savedUser.role === 'director'
+            ? { ...savedUser, email: 'director@samyacademy.dz', displayName: 'Director' }
+            : savedUser;
+          setUser(normalizedUser);
+          setActiveRole(normalizedUser.role);
+          localStorage.setItem('user', JSON.stringify(normalizedUser));
         } else {
           localStorage.removeItem('user');
         }
@@ -42,11 +46,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await new Promise(resolve => setTimeout(resolve, 800));
     
     const normalizedUsername = username.toLowerCase().trim();
-    if (normalizedUsername === 'mohamed' && (password === 'mostarunclub' || password === 'samy123' || password === 'marin123')) {
+    if ((normalizedUsername === 'director' || normalizedUsername === 'directeur') && (password === 'mostarunclub' || password === 'samy123' || password === 'marin123')) {
       const mockUser: User = {
         uid: '1',
-        email: 'mohamed@samyacademy.dz',
-        displayName: 'Directeur Mohamed',
+        email: 'director@samyacademy.dz',
+        displayName: 'Director',
         role: 'director'
       };
       setUser(mockUser);

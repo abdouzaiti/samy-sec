@@ -906,7 +906,7 @@ ON CONFLICT (id) DO NOTHING;`;
                       <input
                         type="text"
                         autoFocus
-                        placeholder="ex: Prof. Mohamed Ziani"
+                        placeholder="ex: Prof. Amine Ziani"
                         value={cellForm.teacherName || ''}
                         onChange={(e) => setCellForm({ ...cellForm, teacherName: e.target.value, teacherId: undefined })}
                         className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-primary focus:bg-white transition-all"

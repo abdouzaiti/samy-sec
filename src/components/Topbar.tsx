@@ -118,7 +118,9 @@ export function Topbar({ onMenuClick }: TopbarProps) {
 
         <div className={cn("flex items-center gap-2.5", isRTL ? "pr-2 sm:pr-6" : "pl-2 sm:pl-6")}>
           <div className={cn("text-right hidden sm:block", isRTL && "text-left")}>
-            <p className="text-sm font-semibold text-slate-900 leading-none">{user?.displayName}</p>
+            <p className="text-sm font-semibold text-slate-900 leading-none">
+              {user?.role === 'director' ? (isRTL ? 'Directeur' : 'Director') : user?.displayName}
+            </p>
             <p className="text-xs text-slate-500 mt-1 capitalize">{user?.role}</p>
           </div>
           <div className="w-8 h-8 sm:w-9 sm:h-9 bg-slate-200 rounded-full flex items-center justify-center text-slate-600 shrink-0">
