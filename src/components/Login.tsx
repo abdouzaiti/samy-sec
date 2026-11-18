@@ -1,0 +1,140 @@
+import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { Loader2 } from 'lucide-react';
+import { cn } from '../lib/utils';
+import { motion } from 'motion/react';
+
+export function Login() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const { login } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { t, isRTL } = useLanguage();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      await login(username, password);
+    } catch (err) {
+      setError(isRTL ? "Nom d'utilisateur ou mot de passe incorrect" : "Invalid username or password");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md"
+      >
+        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl shadow-primary/5 relative overflow-hidden">
+          <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-primary via-accent to-primary" />
+          <div className={cn("flex flex-col items-center mb-10", isRTL && "text-right")}>
+            <div className="w-28 h-28 mb-5 transition-transform hover:scale-105">
+              <img src="/logo.png" alt="Samy Academy Logo" className="w-full h-full object-contain" />
+            </div>
+            <h1 className="text-2xl font-bold text-primary tracking-tight text-center">{t('welcome')}</h1>
+            <p className="text-slate-500 mt-2 text-center font-medium">{t('login_desc')}</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className={cn("p-4 bg-rose-50 text-rose-600 rounded-xl text-sm font-bold animate-in fade-in slide-in-from-top-2", isRTL && "text-right")}>
+                {error}
+              </div>
+            )}
+            <div>
+              <label className={cn("block text-sm font-medium text-slate-700 mb-1", isRTL && "text-right")}>
+                {isRTL ? "Nom d'utilisateur" : "Username"}
+              </label>
+              <input
+                type="text"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="mohamed"
+                className={cn(
+                  "w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all font-bold",
+                   isRTL && "text-right"
+                )}
+              />
+            </div>
+
+            <div>
+              <label className={cn("block text-sm font-medium text-slate-700 mb-1", isRTL && "text-right")}>
+                {t('password')}
+              </label>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className={cn(
+                  "w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all",
+                   isRTL && "text-right"
+                )}
+              />
+            </div>
+
+            <button
+              disabled={isSubmitting}
+              className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/10 transition-all flex items-center justify-center gap-2 group disabled:opacity-70"
+            >
+              {isSubmitting ? (
+                <Loader2 className="animate-spin" size={20} />
+              ) : (
+                <>
+                   {t('signin')}
+                   <div className={cn("transition-transform group-hover:translate-x-1", isRTL && "rotate-180 group-hover:-translate-x-1")}>
+                     →
+                   </div>
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-8 pt-6 border-t border-slate-100">
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest text-center mb-4">
+              {isRTL ? "Accès Rapide de Démo" : "Demo Quick Access"}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setUsername('mohamed');
+                  setPassword('mostarunclub');
+                }}
+                className="p-3 bg-slate-50 border border-slate-200 hover:border-primary/40 hover:bg-slate-50/50 rounded-2xl flex flex-col items-center transition-all group"
+              >
+                <span className="text-xs font-black text-primary group-hover:text-primary/80">
+                  {isRTL ? "Dir. Mohamed" : "Dir. Mohamed"}
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium mt-0.5">mohamed</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setUsername('secretary');
+                  setPassword('samy123');
+                }}
+                className="p-3 bg-slate-50 border border-slate-200 hover:border-primary/40 hover:bg-slate-50/50 rounded-2xl flex flex-col items-center transition-all group"
+              >
+                <span className="text-xs font-black text-primary group-hover:text-primary/80">
+                  {isRTL ? "Secrétariat" : "Secretaries"}
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium mt-0.5">secretary</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
