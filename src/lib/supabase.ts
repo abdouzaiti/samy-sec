@@ -1,12 +1,65 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Dedicated credentials for Samy Academy Supabase project
-const SUPABASE_PROJECT_URL = 'https://exoewaxtjfopqgxolqph.supabase.co';
-const SUPABASE_PROJECT_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b2V3YXh0amZvcHFneG9scXBoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDI2NzUsImV4cCI6MjA5NzI3ODY3NX0.1XX-Nlfkmj4XSiiwAVYGz-QfmyjUxikr8yUFEufRWpQ';
+const PLACEHOLDER_VALUES = new Set([
+  'your_supabase_project_url',
+  'your_supabase_anon_key',
+  'MY_SUPABASE_URL',
+  'MY_SUPABASE_ANON_KEY',
+  'undefined',
+  'null'
+]);
+
+const cleanConfigValue = (val: unknown): string => {
+  if (typeof val !== 'string') return '';
+  const trimmed = val.trim().replace(/^["']|["']$/g, '');
+  if (!trimmed || PLACEHOLDER_VALUES.has(trimmed)) return '';
+  return trimmed;
+};
+
+const isValidHttpUrl = (val: string): boolean => {
+  try {
+    const parsed = new URL(val);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch {
+    return false;
+  }
+};
 
 export const getSupabaseConfig = () => {
-  const url = import.meta.env.VITE_SUPABASE_URL || SUPABASE_PROJECT_URL;
-  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || SUPABASE_PROJECT_ANON_KEY;
+  const urlCandidates = [
+    import.meta.env.VITE_SUPABASE_URL,
+    import.meta.env.SUPABASE_URL,
+    typeof process !== 'undefined' ? process.env?.SUPABASE_URL : undefined
+  ];
+
+  const keyCandidates = [
+    import.meta.env.VITE_SUPABASE_ANON_KEY,
+    import.meta.env.VITE_SUPABASE_API_KEY,
+    import.meta.env.VITE_SUPABASE_KEY,
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
+    import.meta.env.SUPABASE_ANON_KEY,
+    import.meta.env.SUPABASE_API_KEY,
+    typeof process !== 'undefined' ? process.env?.SUPABASE_ANON_KEY : undefined
+  ];
+
+  let url = '';
+  for (const candidate of urlCandidates) {
+    const cleaned = cleanConfigValue(candidate);
+    if (cleaned && isValidHttpUrl(cleaned)) {
+      url = cleaned;
+      break;
+    }
+  }
+
+  let anonKey = '';
+  for (const candidate of keyCandidates) {
+    const cleaned = cleanConfigValue(candidate);
+    if (cleaned) {
+      anonKey = cleaned;
+      break;
+    }
+  }
+
   return { url, anonKey };
 };
 
@@ -16,17 +69,22 @@ export const isSupabaseConfigured = (): boolean => {
 };
 
 let supabaseInstance: SupabaseClient | null = null;
+let lastConfigSignature = '';
 
 export const getSupabase = (): SupabaseClient => {
-  if (supabaseInstance) return supabaseInstance;
-
   const { url, anonKey } = getSupabaseConfig();
 
   if (!url || !anonKey) {
     return {} as SupabaseClient;
   }
 
+  const signature = `${url}::${anonKey}`;
+  if (supabaseInstance && lastConfigSignature === signature) {
+    return supabaseInstance;
+  }
+
   supabaseInstance = createClient(url, anonKey);
+  lastConfigSignature = signature;
   return supabaseInstance;
 };
 

@@ -1257,12 +1257,76 @@ export const paymentsService = {
       ...record,
       id: 'pay-' + Date.now()
     };
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('payments')
+          .insert([{
+            student_id: record.studentId,
+            student_name: record.studentName,
+            class_id: record.classId,
+            month: Number(record.month),
+            amount_paid: Number(record.amountPaid),
+            sarf: Number(record.sarf || 0),
+            session_dates: Array.isArray(record.sessionDates) ? record.sessionDates : [],
+            timestamp: record.timestamp || new Date().toISOString()
+          }])
+          .select()
+          .single();
+
+        if (!error && data) {
+          const created: PaymentRecord = {
+            id: data.id,
+            studentId: data.student_id ?? data.studentId ?? record.studentId,
+            studentName: data.student_name ?? data.studentName ?? record.studentName,
+            classId: data.class_id ?? data.classId ?? record.classId,
+            month: Number(data.month ?? record.month),
+            amountPaid: Number(data.amount_paid ?? data.amountPaid ?? record.amountPaid),
+            sarf: Number(data.sarf ?? record.sarf ?? 0),
+            sessionDates: Array.isArray(data.session_dates) ? data.session_dates : (Array.isArray(data.sessionDates) ? data.sessionDates : record.sessionDates),
+            timestamp: data.timestamp ?? record.timestamp
+          };
+          local.push(created);
+          saveLocalData('payments', local);
+          return created;
+        }
+      } catch (err) {
+        console.warn('Failed to create payment on Supabase, saving locally', err);
+      }
+    }
+
     local.push(newRecord);
     saveLocalData('payments', local);
     return newRecord;
   },
   async getAll(): Promise<PaymentRecord[]> {
-      return getLocalData<PaymentRecord>('payments', []);
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('payments')
+          .select('*')
+          .order('timestamp', { ascending: false });
+        if (!error && data) {
+          const fetched: PaymentRecord[] = data.map((row: any) => ({
+            id: row.id,
+            studentId: row.student_id ?? row.studentId ?? '',
+            studentName: row.student_name ?? row.studentName ?? '',
+            classId: row.class_id ?? row.classId ?? '',
+            month: Number(row.month || 1),
+            amountPaid: Number(row.amount_paid ?? row.amountPaid ?? 0),
+            sarf: Number(row.sarf || 0),
+            sessionDates: Array.isArray(row.session_dates) ? row.session_dates : (Array.isArray(row.sessionDates) ? row.sessionDates : []),
+            timestamp: row.timestamp || new Date().toISOString()
+          }));
+          saveLocalData('payments', fetched);
+          return fetched;
+        }
+      } catch (err) {
+        console.warn('Failed to fetch payments from Supabase, using local cache', err);
+      }
+    }
+    return getLocalData<PaymentRecord>('payments', []);
   }
 };
 
@@ -1411,20 +1475,63 @@ const saveRentVaultLocalData = (data: RentVaultConfig): void => {
   localStorage.setItem('rent_vault_config', JSON.stringify(data));
 };
 
+const RENT_VAULT_CONFIG_ID = 'default_rent_vault';
+
+const syncRentVaultToSupabase = async (config: RentVaultConfig): Promise<void> => {
+  if (!isSupabaseConfigured()) return;
+  try {
+    const { error } = await supabase
+      .from('rent_vault_config')
+      .upsert([{
+        id: RENT_VAULT_CONFIG_ID,
+        target_annual_rent: Number(config.targetAnnualRent) || 180000,
+        deposits: Array.isArray(config.deposits) ? config.deposits : [],
+        updated_at: new Date().toISOString()
+      }], { onConflict: 'id' });
+    if (error) {
+      console.warn('Supabase rent vault upsert notice:', error.message);
+    }
+  } catch (err) {
+    console.warn('Supabase rent vault sync error:', err);
+  }
+};
+
 export const rentVaultService = {
   async getConfig(): Promise<RentVaultConfig> {
-    return getRentVaultLocalData();
+    const local = getRentVaultLocalData();
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('rent_vault_config')
+          .select('*')
+          .eq('id', RENT_VAULT_CONFIG_ID)
+          .maybeSingle();
+
+        if (!error && data) {
+          const config: RentVaultConfig = {
+            targetAnnualRent: Number(data.target_annual_rent ?? data.targetAnnualRent ?? local.targetAnnualRent),
+            deposits: Array.isArray(data.deposits) ? data.deposits : (local.deposits || [])
+          };
+          saveRentVaultLocalData(config);
+          return config;
+        }
+      } catch (err) {
+        console.warn('Supabase rent vault fetch notice (using local storage):', err);
+      }
+    }
+    return local;
   },
 
   async updateTarget(targetAnnualRent: number): Promise<RentVaultConfig> {
-    const config = getRentVaultLocalData();
+    const config = await this.getConfig();
     const updated: RentVaultConfig = { ...config, targetAnnualRent };
     saveRentVaultLocalData(updated);
+    await syncRentVaultToSupabase(updated);
     return updated;
   },
 
   async addDeposit(deposit: Omit<RentVaultDeposit, 'id'>): Promise<RentVaultConfig> {
-    const config = getRentVaultLocalData();
+    const config = await this.getConfig();
     const newDeposit: RentVaultDeposit = {
       ...deposit,
       id: 'rvd-' + Date.now()
@@ -1434,16 +1541,18 @@ export const rentVaultService = {
       deposits: [newDeposit, ...(config.deposits || [])]
     };
     saveRentVaultLocalData(updated);
+    await syncRentVaultToSupabase(updated);
     return updated;
   },
 
   async deleteDeposit(id: string): Promise<RentVaultConfig> {
-    const config = getRentVaultLocalData();
+    const config = await this.getConfig();
     const updated: RentVaultConfig = {
       ...config,
       deposits: (config.deposits || []).filter(d => d.id !== id)
     };
     saveRentVaultLocalData(updated);
+    await syncRentVaultToSupabase(updated);
     return updated;
   }
 };
