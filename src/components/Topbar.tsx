@@ -119,23 +119,30 @@ export function Topbar({ onMenuClick }: TopbarProps) {
           )}
         </button>
 
-        <div className={cn("flex items-center gap-2.5", isRTL ? "pr-2 sm:pr-6" : "pl-2 sm:pl-6")}>
+        <button
+          type="button"
+          onClick={() => navigate('/admins')}
+          className={cn("flex items-center gap-2.5 hover:bg-slate-100/80 py-1 px-2 rounded-xl transition-colors cursor-pointer", isRTL ? "pr-2 sm:pr-4" : "pl-2 sm:pl-4")}
+          title={t('admins_profile')}
+        >
           <div className={cn("hidden sm:block", isRTL ? "text-left" : "text-right")}>
             <p className="text-sm font-semibold text-slate-900 leading-none">
-              {user?.role === 'director'
+              {user?.displayName && user.displayName !== 'Director' && user.displayName !== 'Secrétariat Samy Academy'
+                ? user.displayName
+                : user?.role === 'director'
                 ? tr('المدير', 'Directeur', 'Director')
                 : tr('أمانة أكاديمية سامي', 'Secrétariat Samy Academy', 'Samy Academy Secretariat')}
             </p>
             <p className="text-xs text-slate-500 mt-1 capitalize">
               {user?.role === 'director'
                 ? tr('مدير', 'Directeur', 'Director')
-                : tr('أمانة', 'Secrétaire', 'Secretary')}
+                : tr('سكرتير', 'Secrétaire', 'Secretary')}
             </p>
           </div>
           <div className="w-8 h-8 sm:w-9 sm:h-9 bg-slate-200 rounded-full flex items-center justify-center text-slate-600 shrink-0">
             <UserCircle size={26} />
           </div>
-        </div>
+        </button>
       </div>
     </header>
   );

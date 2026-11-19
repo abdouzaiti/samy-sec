@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
+import { adminAccountsService } from '../services/supabaseService';
 
 interface AuthContextType {
   user: User | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
+  updateSessionUser: (updates: Partial<User>) => void;
   isLoading: boolean;
   activeRole: 'director' | 'secretary';
   switchRole: (role: 'director' | 'secretary') => void;
@@ -18,13 +20,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate checking session
     const savedUserStr = localStorage.getItem('user');
     if (savedUserStr) {
       try {
         const savedUser = JSON.parse(savedUserStr);
         if (savedUser && (savedUser.role === 'director' || savedUser.role === 'secretary')) {
-          const normalizedUser: User = savedUser.role === 'director'
+          const normalizedUser: User = savedUser.uid === '1' && savedUser.displayName === 'Directeur Mohamed'
             ? { ...savedUser, email: 'director@samyacademy.dz', displayName: 'Director' }
             : savedUser;
           setUser(normalizedUser);
@@ -33,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           localStorage.removeItem('user');
         }
-      } catch (e) {
+      } catch {
         localStorage.removeItem('user');
       }
     }
@@ -42,35 +43,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (username: string, password: string) => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    const normalizedUsername = username.toLowerCase().trim();
-    if ((normalizedUsername === 'director' || normalizedUsername === 'directeur') && (password === 'mostarunclub' || password === 'samy123' || password === 'marin123')) {
-      const mockUser: User = {
-        uid: '1',
-        email: 'director@samyacademy.dz',
-        displayName: 'Director',
-        role: 'director'
+    try {
+      const account = await adminAccountsService.authenticate(username, password);
+      if (!account) {
+        throw new Error('Invalid credentials');
+      }
+      const loggedUser: User = {
+        uid: account.id,
+        username: account.username,
+        email: account.email || `${account.username}@samyacademy.dz`,
+        displayName: account.displayName,
+        phone: account.phone || '',
+        role: account.role
       };
-      setUser(mockUser);
-      setActiveRole('director');
-      localStorage.setItem('user', JSON.stringify(mockUser));
+      setUser(loggedUser);
+      setActiveRole(loggedUser.role);
+      localStorage.setItem('user', JSON.stringify(loggedUser));
+    } finally {
       setIsLoading(false);
-    } else if ((normalizedUsername === 'secretary' || normalizedUsername === 'secretaire') && (password === 'samy123' || password === 'samy' || password === 'everest123' || password === 'marin123' || password === 'marin')) {
-      const mockUser: User = {
-        uid: '2',
-        email: 'secretary@samyacademy.dz',
-        displayName: 'Secrétariat Samy Academy',
-        role: 'secretary'
-      };
-      setUser(mockUser);
-      setActiveRole('secretary');
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      setIsLoading(false);
-    } else {
-      setIsLoading(false);
-      throw new Error('Invalid credentials');
     }
   };
 
@@ -79,12 +69,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('user');
   };
 
+  const updateSessionUser = (updates: Partial<User>) => {
+    setUser(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...updates };
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const switchRole = (role: 'director' | 'secretary') => {
     setActiveRole(role);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading, activeRole, switchRole }}>
+    <AuthContext.Provider value={{ user, login, logout, updateSessionUser, isLoading, activeRole, switchRole }}>
       {children}
     </AuthContext.Provider>
   );
@@ -97,3 +96,4 @@ export function useAuth() {
   }
   return context;
 }
+

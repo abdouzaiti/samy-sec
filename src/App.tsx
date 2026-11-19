@@ -12,6 +12,7 @@ import { Payments } from './pages/Payments';
 import { Expenses } from './pages/Expenses';
 import { Notifications } from './pages/Notifications';
 import { Timetable } from './pages/Timetable';
+import { AdminProfiles } from './pages/AdminProfiles';
 import PointageTerminal from './pages/PointageTerminal';
 import { Loader2 } from 'lucide-react';
 
@@ -67,6 +68,7 @@ export default function App() {
               <Route path="payments" element={<Payments />} /> 
               <Route path="expenses" element={<Expenses />} /> 
               <Route path="notifications" element={<Notifications />} />
+              <Route path="admins" element={<AdminProfiles />} />
               <Route path="pointage" element={<PointageTerminal />} />
             </Route>
             

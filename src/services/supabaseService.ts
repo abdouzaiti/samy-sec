@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { SchoolClass, Student, Teacher, PaymentRecord, Expense, RentVaultDeposit, RentVaultConfig, AttendanceRecord, TimetableConfig, TimetableCell } from '../types';
+import { SchoolClass, Student, Teacher, PaymentRecord, Expense, RentVaultDeposit, RentVaultConfig, AttendanceRecord, TimetableConfig, TimetableCell, AdminAccount } from '../types';
 
 const defaultRentVault: RentVaultConfig = {
   targetAnnualRent: 180000, // Default annual rent e.g., 180,000 DA (18 M)
@@ -1828,6 +1828,251 @@ export const timetableService = {
     return this.saveConfig(defaultTimetableConfig);
   }
 };
+
+// ==========================================
+// Admin & Secretary Accounts Service
+// ==========================================
+const defaultAdminAccounts: AdminAccount[] = [
+  {
+    id: '1',
+    username: 'director',
+    password: 'mostarunclub',
+    displayName: 'Director',
+    email: 'director@samyacademy.dz',
+    phone: '',
+    role: 'director',
+    isActive: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    notes: ''
+  },
+  {
+    id: '2',
+    username: 'secretary',
+    password: 'samy123',
+    displayName: 'Secrétariat Samy Academy',
+    email: 'secretary@samyacademy.dz',
+    phone: '',
+    role: 'secretary',
+    isActive: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    notes: ''
+  }
+];
+
+const mapToAdminAccount = (row: any): AdminAccount => ({
+  id: String(row.id),
+  username: String(row.username || '').trim(),
+  password: String(row.password || ''),
+  displayName: String(row.display_name ?? row.displayName ?? row.username ?? ''),
+  email: String(row.email || ''),
+  phone: row.phone ? String(row.phone) : '',
+  role: (row.role === 'director' ? 'director' : 'secretary'),
+  isActive: row.is_active !== undefined ? Boolean(row.is_active) : (row.isActive !== undefined ? Boolean(row.isActive) : true),
+  createdAt: String(row.created_at ?? row.createdAt ?? new Date().toISOString()),
+  notes: row.notes ? String(row.notes) : ''
+});
+
+export const adminAccountsService = {
+  async getAll(): Promise<AdminAccount[]> {
+    const local = getLocalData<AdminAccount>('admin_accounts', defaultAdminAccounts);
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('admin_accounts')
+          .select('*')
+          .order('created_at', { ascending: true });
+        if (error) throw error;
+        if (data && data.length > 0) {
+          const fetched = data.map(mapToAdminAccount);
+          saveLocalData('admin_accounts', fetched);
+          return fetched;
+        }
+        // Seed defaults on Supabase if table exists and is empty
+        await supabase.from('admin_accounts').upsert(
+          defaultAdminAccounts.map(acc => ({
+            id: acc.id,
+            username: acc.username,
+            password: acc.password,
+            display_name: acc.displayName,
+            email: acc.email,
+            phone: acc.phone || '',
+            role: acc.role,
+            is_active: acc.isActive,
+            notes: acc.notes || '',
+            created_at: acc.createdAt
+          })),
+          { onConflict: 'id' }
+        );
+        return defaultAdminAccounts;
+      } catch (err) {
+        console.warn('Supabase admin_accounts fallback to LocalStorage:', err);
+        return local;
+      }
+    }
+    return local;
+  },
+
+  async create(account: Omit<AdminAccount, 'id' | 'createdAt'>): Promise<AdminAccount> {
+    const local = await this.getAll();
+    const cleanUsername = account.username.trim().toLowerCase();
+    if (!cleanUsername) {
+      throw new Error('Username is required');
+    }
+    if (local.some(a => a.username.toLowerCase() === cleanUsername)) {
+      throw new Error('USERNAME_EXISTS');
+    }
+
+    const newAccount: AdminAccount = {
+      ...account,
+      username: cleanUsername,
+      id: 'sec-' + Date.now() + Math.random().toString(36).substring(2, 6),
+      createdAt: new Date().toISOString()
+    };
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('admin_accounts')
+          .insert([{
+            id: newAccount.id,
+            username: newAccount.username,
+            password: newAccount.password,
+            display_name: newAccount.displayName,
+            email: newAccount.email || '',
+            phone: newAccount.phone || '',
+            role: newAccount.role,
+            is_active: newAccount.isActive,
+            notes: newAccount.notes || '',
+            created_at: newAccount.createdAt
+          }])
+          .select()
+          .single();
+
+        if (!error && data) {
+          const created = mapToAdminAccount(data);
+          const updatedLocal = [...local, created];
+          saveLocalData('admin_accounts', updatedLocal);
+          return created;
+        }
+        console.warn('Supabase create admin_account warning:', error);
+      } catch (err) {
+        console.warn('Error creating admin account in Supabase, saving locally:', err);
+      }
+    }
+
+    const updatedLocal = [...local, newAccount];
+    saveLocalData('admin_accounts', updatedLocal);
+    return newAccount;
+  },
+
+  async update(id: string, updates: Partial<Omit<AdminAccount, 'id' | 'createdAt'>>): Promise<AdminAccount> {
+    const local = getLocalData<AdminAccount>('admin_accounts', defaultAdminAccounts);
+    const existing = local.find(a => a.id === id);
+    if (!existing) throw new Error('Account not found');
+
+    const cleanUsername = updates.username !== undefined
+      ? updates.username.trim().toLowerCase()
+      : existing.username;
+
+    if (updates.username !== undefined && local.some(a => a.id !== id && a.username.toLowerCase() === cleanUsername)) {
+      throw new Error('USERNAME_EXISTS');
+    }
+
+    const merged: AdminAccount = {
+      ...existing,
+      ...updates,
+      username: cleanUsername
+    };
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('admin_accounts')
+          .update({
+            username: merged.username,
+            password: merged.password,
+            display_name: merged.displayName,
+            email: merged.email || '',
+            phone: merged.phone || '',
+            role: merged.role,
+            is_active: merged.isActive,
+            notes: merged.notes || ''
+          })
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (!error && data) {
+          const updatedRemote = mapToAdminAccount(data);
+          saveLocalData('admin_accounts', local.map(a => a.id === id ? updatedRemote : a));
+          return updatedRemote;
+        }
+      } catch (err) {
+        console.warn('Error updating admin account on Supabase:', err);
+      }
+    }
+
+    saveLocalData('admin_accounts', local.map(a => a.id === id ? merged : a));
+    return merged;
+  },
+
+  async delete(id: string): Promise<void> {
+    const local = getLocalData<AdminAccount>('admin_accounts', defaultAdminAccounts);
+    saveLocalData('admin_accounts', local.filter(a => a.id !== id));
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { error } = await supabase
+          .from('admin_accounts')
+          .delete()
+          .eq('id', id);
+        if (error) console.warn('Supabase delete admin_account warning:', error);
+      } catch (err) {
+        console.warn('Error deleting admin account from Supabase:', err);
+      }
+    }
+  },
+
+  async authenticate(identifier: string, password: string): Promise<AdminAccount | null> {
+    const accounts = await this.getAll();
+    const norm = identifier.toLowerCase().trim();
+
+    // Exact match on username or email
+    const matched = accounts.find(acc => {
+      const matchUser = acc.username.toLowerCase() === norm || (acc.email && acc.email.toLowerCase() === norm);
+      if (!matchUser) return false;
+      if (!acc.isActive) return false;
+      if (acc.password === password) return true;
+      // Preserve legacy password aliases for built-in default director/secretary accounts if password hasn't been customized
+      if (acc.id === '1' && acc.password === 'mostarunclub' && (password === 'samy123' || password === 'marin123')) {
+        return true;
+      }
+      if (acc.id === '2' && acc.password === 'samy123' && (password === 'samy' || password === 'everest123' || password === 'marin123' || password === 'marin')) {
+        return true;
+      }
+      return false;
+    });
+
+    if (matched) return matched;
+
+    // Support legacy username aliases ('directeur', 'secretaire') mapping to accounts '1' / '2'
+    if (norm === 'directeur') {
+      const dir = accounts.find(a => a.id === '1' && a.isActive);
+      if (dir && (dir.password === password || (dir.password === 'mostarunclub' && (password === 'samy123' || password === 'marin123')))) {
+        return dir;
+      }
+    }
+    if (norm === 'secretaire') {
+      const sec = accounts.find(a => a.id === '2' && a.isActive);
+      if (sec && (sec.password === password || (sec.password === 'samy123' && (password === 'samy' || password === 'everest123' || password === 'marin123' || password === 'marin')))) {
+        return sec;
+      }
+    }
+
+    return null;
+  }
+};
+
 
 
 

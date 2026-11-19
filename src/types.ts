@@ -99,9 +99,24 @@ export interface Notification {
 
 export interface User {
   uid: string;
+  username?: string;
   email: string;
   displayName: string;
+  phone?: string;
   role: 'director' | 'secretary';
+}
+
+export interface AdminAccount {
+  id: string;
+  username: string;
+  password: string;
+  displayName: string;
+  email: string;
+  phone?: string;
+  role: 'director' | 'secretary';
+  isActive: boolean;
+  createdAt: string;
+  notes?: string;
 }
 
 export interface TimetableCell {

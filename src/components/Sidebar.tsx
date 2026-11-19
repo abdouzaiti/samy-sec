@@ -10,7 +10,8 @@ import {
   LogOut,
   X,
   GraduationCap,
-  CalendarDays
+  CalendarDays,
+  ShieldCheck
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
@@ -78,6 +79,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { icon: CreditCard, label: t('payments'), href: '/payments' },
     { icon: Receipt, label: t('expenses'), href: '/expenses' },
     { icon: Bell, label: t('notifications'), href: '/notifications', badge: alertCount },
+    { icon: ShieldCheck, label: t('admins_profile'), href: '/admins' },
   ];
 
   return (
@@ -100,7 +102,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </button>
       </div>
 
-      <nav className="flex-1 px-4 py-4 space-y-1">
+      <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => (
           <NavLink
             key={item.href}
