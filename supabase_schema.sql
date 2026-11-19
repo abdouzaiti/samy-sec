@@ -136,12 +136,12 @@ CREATE TABLE IF NOT EXISTS public.rent_vault_config (
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now())
 );
 
--- J. CREATE admin_accounts TABLE
-CREATE TABLE IF NOT EXISTS public.admin_accounts (
+-- J. CREATE admin TABLE
+CREATE TABLE IF NOT EXISTS public.admin (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   username TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL,
-  display_name TEXT NOT NULL,
+  display_name TEXT NOT NULL DEFAULT '',
   email TEXT,
   phone TEXT,
   role TEXT NOT NULL DEFAULT 'secretary' CHECK (role IN ('director', 'secretary')),
@@ -207,6 +207,16 @@ ALTER TABLE public.pointage_logs ADD COLUMN IF NOT EXISTS "tokenId" TEXT;
 ALTER TABLE public.pointage_logs ADD COLUMN IF NOT EXISTS token_id TEXT;
 ALTER TABLE public.pointage_logs ADD COLUMN IF NOT EXISTS timestamp TEXT;
 ALTER TABLE public.pointage_logs ADD COLUMN IF NOT EXISTS details TEXT;
+
+ALTER TABLE public.admin ADD COLUMN IF NOT EXISTS username TEXT;
+ALTER TABLE public.admin ADD COLUMN IF NOT EXISTS password TEXT;
+ALTER TABLE public.admin ADD COLUMN IF NOT EXISTS display_name TEXT;
+ALTER TABLE public.admin ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE public.admin ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE public.admin ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'secretary';
+ALTER TABLE public.admin ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+ALTER TABLE public.admin ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE public.admin ADD COLUMN IF NOT EXISTS created_at TEXT DEFAULT (now()::text);
 
 
 -- ==========================================
@@ -482,9 +492,9 @@ CREATE POLICY "Allow all on timetable_config" ON public.timetable_config FOR ALL
 DROP POLICY IF EXISTS "Allow all on rent_vault_config" ON public.rent_vault_config;
 CREATE POLICY "Allow all on rent_vault_config" ON public.rent_vault_config FOR ALL USING (true) WITH CHECK (true);
 
-ALTER TABLE public.admin_accounts ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Allow all on admin_accounts" ON public.admin_accounts;
-CREATE POLICY "Allow all on admin_accounts" ON public.admin_accounts FOR ALL USING (true) WITH CHECK (true);
+ALTER TABLE public.admin ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all on admin" ON public.admin;
+CREATE POLICY "Allow all on admin" ON public.admin FOR ALL USING (true) WITH CHECK (true);
 
 
 -- ==========================================
@@ -500,7 +510,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.expenses TO anon, authentic
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.payments TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.timetable_config TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.rent_vault_config TO anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.admin_accounts TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.admin TO anon, authenticated;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
 
 -- Reload PostgREST schema cache
@@ -548,7 +558,7 @@ INSERT INTO public.students (id, name, parent_phone, payment_status, class_id, c
 ('student-9', 'Oussama Sifi', '0792345678', 'Unpaid', 'class-5', '["class-5"]'::jsonb, 'S109', 1, '[1]'::jsonb)
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO public.admin_accounts (id, username, password, display_name, email, phone, role, is_active, created_at) VALUES
+INSERT INTO public.admin (id, username, password, display_name, email, phone, role, is_active, created_at) VALUES
 ('1', 'director', 'mostarunclub', 'Director', 'director@samyacademy.dz', '', 'director', true, '2026-01-01T00:00:00.000Z'),
 ('2', 'secretary', 'samy123', 'Secrétariat Samy Academy', 'secretary@samyacademy.dz', '', 'secretary', true, '2026-01-01T00:00:00.000Z')
 ON CONFLICT (id) DO NOTHING;

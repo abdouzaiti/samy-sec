@@ -1859,17 +1859,39 @@ const defaultAdminAccounts: AdminAccount[] = [
   }
 ];
 
-const mapToAdminAccount = (row: any): AdminAccount => ({
-  id: String(row.id),
-  username: String(row.username || '').trim(),
-  password: String(row.password || ''),
-  displayName: String(row.display_name ?? row.displayName ?? row.username ?? ''),
-  email: String(row.email || ''),
-  phone: row.phone ? String(row.phone) : '',
-  role: (row.role === 'director' ? 'director' : 'secretary'),
-  isActive: row.is_active !== undefined ? Boolean(row.is_active) : (row.isActive !== undefined ? Boolean(row.isActive) : true),
-  createdAt: String(row.created_at ?? row.createdAt ?? new Date().toISOString()),
-  notes: row.notes ? String(row.notes) : ''
+const mapToAdminAccount = (row: any): AdminAccount => {
+  const rawRole = String(row.role || '').toLowerCase().trim();
+  const username = String(row.username || '').trim();
+  const inferredRole: 'director' | 'secretary' =
+    rawRole === 'director' || username.toLowerCase() === 'director' || username.toLowerCase() === 'directeur'
+      ? 'director'
+      : 'secretary';
+
+  return {
+    id: String(row.id ?? username),
+    username,
+    password: String(row.password || ''),
+    displayName: String(row.display_name ?? row.displayName ?? row.name ?? username ?? ''),
+    email: String(row.email || ''),
+    phone: row.phone ? String(row.phone) : '',
+    role: inferredRole,
+    isActive: row.is_active !== undefined ? Boolean(row.is_active) : (row.isActive !== undefined ? Boolean(row.isActive) : true),
+    createdAt: String(row.created_at ?? row.createdAt ?? new Date().toISOString()),
+    notes: row.notes ? String(row.notes) : ''
+  };
+};
+
+const toFullAdminPayload = (acc: AdminAccount) => ({
+  id: acc.id,
+  username: acc.username,
+  password: acc.password,
+  display_name: acc.displayName,
+  email: acc.email || '',
+  phone: acc.phone || '',
+  role: acc.role,
+  is_active: acc.isActive,
+  notes: acc.notes || '',
+  created_at: acc.createdAt
 });
 
 export const adminAccountsService = {
@@ -1878,38 +1900,95 @@ export const adminAccountsService = {
     if (isSupabaseConfigured()) {
       try {
         const { data, error } = await supabase
-          .from('admin_accounts')
+          .from('admin')
           .select('*')
           .order('created_at', { ascending: true });
-        if (error) throw error;
-        if (data && data.length > 0) {
-          const fetched = data.map(mapToAdminAccount);
-          saveLocalData('admin_accounts', fetched);
-          return fetched;
+
+        if (!error && data) {
+          if (data.length > 0) {
+            const fetched = data.map(mapToAdminAccount);
+            saveLocalData('admin_accounts', fetched);
+            return fetched;
+          }
+          // Seed local/default rows into Supabase 'admin' table if table exists and is empty
+          await supabase.from('admin').upsert(
+            local.map(toFullAdminPayload),
+            { onConflict: 'id' }
+          );
+          return local;
         }
-        // Seed defaults on Supabase if table exists and is empty
-        await supabase.from('admin_accounts').upsert(
-          defaultAdminAccounts.map(acc => ({
-            id: acc.id,
-            username: acc.username,
-            password: acc.password,
-            display_name: acc.displayName,
-            email: acc.email,
-            phone: acc.phone || '',
-            role: acc.role,
-            is_active: acc.isActive,
-            notes: acc.notes || '',
-            created_at: acc.createdAt
-          })),
-          { onConflict: 'id' }
-        );
-        return defaultAdminAccounts;
+
+        // Fallback query without ordering in case created_at column does not exist yet
+        const { data: d2, error: e2 } = await supabase.from('admin').select('*');
+        if (!e2 && d2) {
+          if (d2.length > 0) {
+            const fetched = d2.map(mapToAdminAccount);
+            saveLocalData('admin_accounts', fetched);
+            return fetched;
+          }
+          await supabase.from('admin').upsert(
+            local.map(a => ({ id: a.id, username: a.username, password: a.password, role: a.role })),
+            { onConflict: 'id' }
+          );
+          return local;
+        }
+
+        throw error || e2;
       } catch (err) {
-        console.warn('Supabase admin_accounts fallback to LocalStorage:', err);
+        console.warn('Supabase admin table fallback to LocalStorage:', err);
         return local;
       }
     }
     return local;
+  },
+
+  async syncWithSupabase(): Promise<{ synced: boolean; accounts: AdminAccount[]; needsTableSql?: boolean; errorMessage?: string }> {
+    const local = getLocalData<AdminAccount>('admin_accounts', defaultAdminAccounts);
+    if (!isSupabaseConfigured()) {
+      return { synced: false, accounts: local, errorMessage: 'Supabase is not configured' };
+    }
+
+    try {
+      const { data: remoteRows, error: fetchErr } = await supabase.from('admin').select('*');
+      if (fetchErr) {
+        const msg = fetchErr.message || '';
+        const missingTable =
+          fetchErr.code === '42P01' ||
+          fetchErr.code === 'PGRST205' ||
+          msg.toLowerCase().includes('does not exist') ||
+          msg.toLowerCase().includes('could not find the table');
+        return { synced: false, accounts: local, needsTableSql: missingTable, errorMessage: msg };
+      }
+
+      const remoteMapped = (remoteRows || []).map(mapToAdminAccount);
+      const remoteByUsername = new Map(remoteMapped.map(r => [r.username.toLowerCase(), r]));
+
+      // Merge any local-only accounts into Supabase 'admin' table
+      const missingOnRemote = local.filter(l => !remoteByUsername.has(l.username.toLowerCase()));
+      if (missingOnRemote.length > 0) {
+        const { error: upsertErr } = await supabase
+          .from('admin')
+          .upsert(missingOnRemote.map(toFullAdminPayload), { onConflict: 'id' });
+
+        if (upsertErr) {
+          await supabase.from('admin').upsert(
+            missingOnRemote.map(a => ({ id: a.id, username: a.username, password: a.password, role: a.role })),
+            { onConflict: 'id' }
+          );
+        }
+      }
+
+      const { data: finalRows, error: finalErr } = await supabase.from('admin').select('*');
+      if (!finalErr && finalRows) {
+        const merged = finalRows.map(mapToAdminAccount);
+        saveLocalData('admin_accounts', merged);
+        return { synced: true, accounts: merged };
+      }
+
+      return { synced: true, accounts: remoteMapped.length > 0 ? remoteMapped : local };
+    } catch (err: any) {
+      return { synced: false, accounts: local, errorMessage: err?.message || 'Sync failed' };
+    }
   },
 
   async create(account: Omit<AdminAccount, 'id' | 'createdAt'>): Promise<AdminAccount> {
@@ -1932,19 +2011,8 @@ export const adminAccountsService = {
     if (isSupabaseConfigured()) {
       try {
         const { data, error } = await supabase
-          .from('admin_accounts')
-          .insert([{
-            id: newAccount.id,
-            username: newAccount.username,
-            password: newAccount.password,
-            display_name: newAccount.displayName,
-            email: newAccount.email || '',
-            phone: newAccount.phone || '',
-            role: newAccount.role,
-            is_active: newAccount.isActive,
-            notes: newAccount.notes || '',
-            created_at: newAccount.createdAt
-          }])
+          .from('admin')
+          .insert([toFullAdminPayload(newAccount)])
           .select()
           .single();
 
@@ -1954,7 +2022,27 @@ export const adminAccountsService = {
           saveLocalData('admin_accounts', updatedLocal);
           return created;
         }
-        console.warn('Supabase create admin_account warning:', error);
+
+        // Strategy 2: minimal columns if the admin table only has core columns
+        const { data: d2, error: e2 } = await supabase
+          .from('admin')
+          .insert([{
+            id: newAccount.id,
+            username: newAccount.username,
+            password: newAccount.password,
+            role: newAccount.role
+          }])
+          .select()
+          .single();
+
+        if (!e2 && d2) {
+          const created = { ...newAccount, ...mapToAdminAccount(d2), displayName: newAccount.displayName, email: newAccount.email, phone: newAccount.phone };
+          const updatedLocal = [...local, created];
+          saveLocalData('admin_accounts', updatedLocal);
+          return created;
+        }
+
+        console.warn('Supabase create admin warning:', error || e2);
       } catch (err) {
         console.warn('Error creating admin account in Supabase, saving locally:', err);
       }
@@ -1987,7 +2075,7 @@ export const adminAccountsService = {
     if (isSupabaseConfigured()) {
       try {
         const { data, error } = await supabase
-          .from('admin_accounts')
+          .from('admin')
           .update({
             username: merged.username,
             password: merged.password,
@@ -2007,6 +2095,23 @@ export const adminAccountsService = {
           saveLocalData('admin_accounts', local.map(a => a.id === id ? updatedRemote : a));
           return updatedRemote;
         }
+
+        // Fallback for minimal admin table columns (username, password, role)
+        const { data: d2, error: e2 } = await supabase
+          .from('admin')
+          .update({
+            username: merged.username,
+            password: merged.password,
+            role: merged.role
+          })
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (!e2 && d2) {
+          saveLocalData('admin_accounts', local.map(a => a.id === id ? merged : a));
+          return merged;
+        }
       } catch (err) {
         console.warn('Error updating admin account on Supabase:', err);
       }
@@ -2023,10 +2128,10 @@ export const adminAccountsService = {
     if (isSupabaseConfigured()) {
       try {
         const { error } = await supabase
-          .from('admin_accounts')
+          .from('admin')
           .delete()
           .eq('id', id);
-        if (error) console.warn('Supabase delete admin_account warning:', error);
+        if (error) console.warn('Supabase delete admin warning:', error);
       } catch (err) {
         console.warn('Error deleting admin account from Supabase:', err);
       }
@@ -2072,6 +2177,7 @@ export const adminAccountsService = {
     return null;
   }
 };
+
 
 
 

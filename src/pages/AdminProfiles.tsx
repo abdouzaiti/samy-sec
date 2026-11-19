@@ -17,7 +17,9 @@ import {
   Lock,
   Sparkles,
   Loader2,
-  Users
+  Users,
+  Database,
+  RefreshCw
 } from 'lucide-react';
 import { adminAccountsService } from '../services/supabaseService';
 import { AdminAccount } from '../types';
@@ -66,13 +68,51 @@ export function AdminProfiles() {
   });
   const [showEditPassword, setShowEditPassword] = useState(false);
 
+  // Supabase 'admin' table sync & SQL modal
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'warning'; text: string } | null>(null);
+  const [isSqlModalOpen, setIsSqlModalOpen] = useState(false);
+  const [isCopiedSql, setIsCopiedSql] = useState(false);
+
+  const adminSqlCode = `-- ========================================================
+-- SCHEMA SUPABASE: TABLE 'admin' (SAMY ACADEMY)
+-- ========================================================
+
+CREATE TABLE IF NOT EXISTS public.admin (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  username TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  display_name TEXT NOT NULL DEFAULT '',
+  email TEXT,
+  phone TEXT,
+  role TEXT NOT NULL DEFAULT 'secretary' CHECK (role IN ('director', 'secretary')),
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  notes TEXT,
+  created_at TEXT NOT NULL DEFAULT (now()::text)
+);
+
+ALTER TABLE public.admin ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow all on admin" ON public.admin;
+CREATE POLICY "Allow all on admin" ON public.admin FOR ALL USING (true) WITH CHECK (true);
+
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.admin TO anon, authenticated;
+
+INSERT INTO public.admin (id, username, password, display_name, email, phone, role, is_active, created_at) VALUES
+('1', 'director', 'mostarunclub', 'Director', 'director@samyacademy.dz', '', 'director', true, '2026-01-01T00:00:00.000Z'),
+('2', 'secretary', 'samy123', 'Secrétariat Samy Academy', 'secretary@samyacademy.dz', '', 'secretary', true, '2026-01-01T00:00:00.000Z')
+ON CONFLICT (id) DO NOTHING;`;
+
   const loadAccounts = async () => {
     setLoading(true);
     try {
-      const data = await adminAccountsService.getAll();
-      setAccounts(data);
+      const syncResult = await adminAccountsService.syncWithSupabase();
+      setAccounts(syncResult.accounts);
     } catch (err) {
       console.error('Error loading admin accounts:', err);
+      const data = await adminAccountsService.getAll();
+      setAccounts(data);
     } finally {
       setLoading(false);
     }
@@ -81,6 +121,49 @@ export function AdminProfiles() {
   useEffect(() => {
     loadAccounts();
   }, []);
+
+  const handleSyncWithSupabase = async () => {
+    setIsSyncing(true);
+    setSyncMessage(null);
+    try {
+      const res = await adminAccountsService.syncWithSupabase();
+      setAccounts(res.accounts);
+      if (res.synced) {
+        setSyncMessage({
+          type: 'success',
+          text: tr(
+            'تمت المزامنة بنجاح مع جدول admin في Supabase',
+            'Synchronisé avec succès avec la table "admin" sur Supabase',
+            'Successfully synced with Supabase "admin" table'
+          )
+        });
+        setTimeout(() => setSyncMessage(null), 4000);
+      } else if (res.needsTableSql) {
+        setIsSqlModalOpen(true);
+        setSyncMessage({
+          type: 'warning',
+          text: tr(
+            'جدول "admin" غير موجود بعد في Supabase — انسخ كود SQL وشغله ثم أعد المزامنة',
+            'La table "admin" n\'existe pas encore sur Supabase — exécutez le SQL ci-dessous',
+            'Table "admin" not found in Supabase yet — run the SQL script below'
+          )
+        });
+      } else {
+        setSyncMessage({
+          type: 'warning',
+          text: res.errorMessage || tr('تعذرت المزامنة مع Supabase', 'Échec de synchronisation Supabase', 'Supabase sync failed')
+        });
+      }
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleCopySql = () => {
+    navigator.clipboard.writeText(adminSqlCode);
+    setIsCopiedSql(true);
+    setTimeout(() => setIsCopiedSql(false), 2000);
+  };
 
   const directorAccounts = accounts.filter(a => a.role === 'director');
   const secretaryAccounts = accounts.filter(a => a.role === 'secretary');
@@ -334,21 +417,64 @@ export function AdminProfiles() {
           )}
 
           {isDirector && (
-            <button
-              type="button"
-              onClick={() => {
-                setAddError(null);
-                setShowNewPassword(true);
-                setIsAddModalOpen(true);
-              }}
-              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-5 py-3 rounded-2xl font-black text-xs sm:text-sm shadow-xl shadow-primary/15 transition-all active:scale-95 cursor-pointer"
-            >
-              <UserPlus size={18} />
-              <span>{tr('إضافة حساب سكرتير', 'Ajouter un Secrétaire', 'Add Secretary Account')}</span>
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleSyncWithSupabase}
+                disabled={isSyncing}
+                className="flex items-center gap-2 bg-white hover:bg-slate-50 text-primary border border-slate-200 px-4 py-3 rounded-2xl font-bold text-xs shadow-sm transition-all active:scale-95 cursor-pointer disabled:opacity-60"
+                title={tr('مزامنة الحسابات مع جدول admin في Supabase', 'Synchroniser avec la table admin sur Supabase', 'Sync accounts with Supabase admin table')}
+              >
+                <RefreshCw size={15} className={cn(isSyncing && "animate-spin")} />
+                <span>{tr('مزامنة Supabase', 'Sync Supabase', 'Sync Supabase')}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsSqlModalOpen(true)}
+                className="flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-4 py-3 rounded-2xl font-bold text-xs shadow-sm transition-all active:scale-95 cursor-pointer"
+                title={tr('كود SQL لإنشاء جدول admin في Supabase', 'Script SQL de la table admin', 'SQL script for admin table')}
+              >
+                <Database size={15} />
+                <span>{tr('جدول admin (SQL)', 'Table admin (SQL)', 'admin SQL')}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setAddError(null);
+                  setShowNewPassword(true);
+                  setIsAddModalOpen(true);
+                }}
+                className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-5 py-3 rounded-2xl font-black text-xs sm:text-sm shadow-xl shadow-primary/15 transition-all active:scale-95 cursor-pointer"
+              >
+                <UserPlus size={18} />
+                <span>{tr('إضافة حساب سكرتير', 'Ajouter un Secrétaire', 'Add Secretary Account')}</span>
+              </button>
+            </>
           )}
         </div>
       </div>
+
+      {syncMessage && (
+        <div
+          className={cn(
+            "p-3.5 rounded-2xl border text-xs font-bold flex items-center justify-between gap-3",
+            syncMessage.type === 'success'
+              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+              : "bg-amber-50 border-amber-200 text-amber-900"
+          )}
+        >
+          <span>{syncMessage.text}</span>
+          <button
+            type="button"
+            onClick={() => setSyncMessage(null)}
+            className="opacity-60 hover:opacity-100 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
@@ -944,6 +1070,62 @@ export function AdminProfiles() {
             </button>
           </form>
         )}
+      </Modal>
+
+      {/* Supabase 'admin' Table SQL Modal */}
+      <Modal
+        isOpen={isSqlModalOpen}
+        onClose={() => setIsSqlModalOpen(false)}
+        title={tr('ربط جدول "admin" في Supabase', 'Table Supabase "admin"', 'Supabase "admin" Table Setup')}
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-slate-600 font-medium leading-relaxed">
+            {tr(
+              'قم بنسخ هذا السكربت وتشغيله في SQL Editor داخل لوحة تحكم Supabase لإنشاء جدول "admin" (اسم المستخدم، كلمة المرور، الدور، والمعلومات) ومزامنته مباشرة مع هذا القسم:',
+              'Copiez et exécutez ce script dans le SQL Editor de Supabase pour créer la table "admin" (username, password, rôle et profils) et la synchroniser avec cette section :',
+              'Copy and run this SQL script in your Supabase SQL Editor to create the "admin" table (username, password, role & profile details) and sync it with this section:'
+            )}
+          </p>
+
+          <div className="relative">
+            <pre
+              dir="ltr"
+              className="bg-slate-900 text-emerald-300 p-4 rounded-2xl text-[11px] font-mono overflow-x-auto max-h-64 leading-relaxed border border-slate-800 text-left"
+            >
+              {adminSqlCode}
+            </pre>
+            <button
+              type="button"
+              onClick={handleCopySql}
+              className="absolute top-3 right-3 flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-xl text-[11px] font-bold transition-colors cursor-pointer"
+            >
+              {isCopiedSql ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+              <span>{isCopiedSql ? tr('تم النسخ', 'Copié !', 'Copied!') : tr('نسخ SQL', 'Copier SQL', 'Copy SQL')}</span>
+            </button>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsSqlModalOpen(false)}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 cursor-pointer"
+            >
+              {tr('إغلاق', 'Fermer', 'Close')}
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                await handleSyncWithSupabase();
+                setIsSqlModalOpen(false);
+              }}
+              disabled={isSyncing}
+              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-xl text-xs font-black shadow-lg shadow-primary/15 cursor-pointer disabled:opacity-60"
+            >
+              <RefreshCw size={14} className={cn(isSyncing && "animate-spin")} />
+              <span>{tr('مزامنة الآن', 'Synchroniser maintenant', 'Sync Now')}</span>
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
