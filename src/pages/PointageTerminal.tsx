@@ -1,27 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Scan, 
-  User, 
-  GraduationCap, 
-  HelpCircle, 
-  FileSpreadsheet, 
   CheckCircle, 
   XCircle, 
-  RefreshCw, 
-  Trash2, 
   Volume2, 
   VolumeX, 
   Keyboard, 
-  UserCheck, 
   Link2,
   Calendar
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { studentsService, teachersService, pointageService, classesService } from '../services/supabaseService';
 import { Student, Teacher, PointageLog, SchoolClass } from '../types';
+import { cn } from '../lib/utils';
 
 export default function PointageTerminal() {
-  const { t, isRTL, language } = useLanguage();
+  const { t, tr, isRTL, language } = useLanguage();
   const [students, setStudents] = useState<Student[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -38,14 +32,10 @@ export default function PointageTerminal() {
     isPaid?: boolean;
   } | null>(null);
 
-  // Sound effects configurations
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [rfidFocus, setRfidFocus] = useState(false);
-  
-  // Ref for RFID keyboard reader emulator input focus
   const rfidInputRef = useRef<HTMLInputElement>(null);
 
-  // States for Assigning Token Quick Modal
   const [isAssigning, setIsAssigning] = useState(false);
   const [assignTargetType, setAssignTargetType] = useState<'student' | 'teacher'>('student');
   const [selectedPersonId, setSelectedPersonId] = useState('');
@@ -53,14 +43,11 @@ export default function PointageTerminal() {
 
   useEffect(() => {
     loadData();
-    // Auto-focus RFID reader on load
     setTimeout(() => {
       rfidInputRef.current?.focus();
     }, 600);
 
-    // Global Key Listener to redirect hardware scans (keyboard emulation)
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept if an interactive modal input, select or textarea is currently focused
       const activeEl = document.activeElement;
       if (activeEl) {
         const tagName = activeEl.tagName.toLowerCase();
@@ -71,12 +58,10 @@ export default function PointageTerminal() {
         }
       }
 
-      // Ignore common modifier keys
       if (e.ctrlKey || e.altKey || e.metaKey || e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt') {
         return;
       }
 
-      // If user presses any alphanumeric key, focus our scan field automatically
       if (rfidInputRef.current && document.activeElement !== rfidInputRef.current) {
         rfidInputRef.current.focus();
       }
@@ -91,7 +76,7 @@ export default function PointageTerminal() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [sList, tList, cList, lList] = await Promise.all([
+      const [sList, tList, lList, cList] = await Promise.all([
         studentsService.getAll(),
         teachersService.getAll(),
         pointageService.getAll(),
@@ -99,8 +84,8 @@ export default function PointageTerminal() {
       ]);
       setStudents(sList);
       setTeachers(tList);
-      setClasses(cList);
       setLogs(lList);
+      setClasses(cList);
     } catch (err) {
       console.error("Error loading data in terminal:", err);
     } finally {
@@ -108,15 +93,12 @@ export default function PointageTerminal() {
     }
   };
 
-  // Play synthesized audio for physically engaging feedback
   const playBeep = (type: 'success' | 'failure' | 'neutral') => {
     if (!soundEnabled) return;
     try {
-      // Modern Web Audio API synth
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
       
       if (type === 'success') {
-        // High-pitched pleasant bell sound
         const osc1 = audioCtx.createOscillator();
         const osc2 = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
@@ -126,9 +108,9 @@ export default function PointageTerminal() {
         gainNode.connect(audioCtx.destination);
         
         osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+        osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime);
         osc2.type = 'triangle';
-        osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5
+        osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime);
         
         gainNode.gain.setValueAtTime(0.12, audioCtx.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
@@ -138,7 +120,6 @@ export default function PointageTerminal() {
         osc1.stop(audioCtx.currentTime + 0.35);
         osc2.stop(audioCtx.currentTime + 0.35);
       } else if (type === 'failure') {
-        // Low buzzy warning tone
         const osc = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
         
@@ -146,7 +127,7 @@ export default function PointageTerminal() {
         gainNode.connect(audioCtx.destination);
         
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(140.0, audioCtx.currentTime); // Low frequency
+        osc.frequency.setValueAtTime(140.0, audioCtx.currentTime);
         
         gainNode.gain.setValueAtTime(0.18, audioCtx.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.45);
@@ -154,13 +135,12 @@ export default function PointageTerminal() {
         osc.start();
         osc.stop(audioCtx.currentTime + 0.45);
       } else {
-        // Standard scan beep
         const osc = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
         osc.connect(gainNode);
         gainNode.connect(audioCtx.destination);
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
+        osc.frequency.setValueAtTime(440, audioCtx.currentTime);
         gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
         osc.start();
@@ -175,10 +155,7 @@ export default function PointageTerminal() {
     const rawVal = tokenIdToScan.trim();
     if (!rawVal) return;
 
-    // Search students
     const matchedStudent = students.find(s => s.tokenId?.toUpperCase() === rawVal.toUpperCase());
-    
-    // Search teachers
     const matchedTeacher = teachers.find(t => t.tokenId?.toUpperCase() === rawVal.toUpperCase());
 
     if (matchedStudent) {
@@ -201,10 +178,18 @@ export default function PointageTerminal() {
       let logStatus = '';
 
       if (newSessionCount <= 4) {
-        detailsMsg = `Présence enregistrée - Session ${newSessionCount}/4 (${studentClassName})`;
+        detailsMsg = tr(
+          `تم تسجيل الحضور - الحصة ${newSessionCount}/4 (${studentClassName})`,
+          `Présence enregistrée - Session ${newSessionCount}/4 (${studentClassName})`,
+          `Attendance recorded - Session ${newSessionCount}/4 (${studentClassName})`
+        );
         logStatus = `Session ${newSessionCount}/4`;
       } else {
-        detailsMsg = `Attention: Plus de 4 sessions ce mois-ci (${newSessionCount}/4)`;
+        detailsMsg = tr(
+          `تنبيه: تجاوز 4 حصص هذا الشهر (${newSessionCount}/4)`,
+          `Attention: Plus de 4 sessions ce mois-ci (${newSessionCount}/4)`,
+          `Warning: Over 4 sessions this month (${newSessionCount}/4)`
+        );
         isSuccess = false;
         logStatus = `Session ${newSessionCount}/4 (Over limit)`;
       }
@@ -220,7 +205,6 @@ export default function PointageTerminal() {
         isPaid: isSuccess
       });
 
-      // Write code Pointage Log in Supabase
       try {
         const logged = await pointageService.log({
           personId: matchedStudent.id,
@@ -236,7 +220,6 @@ export default function PointageTerminal() {
 
     } else if (matchedTeacher) {
       const detailsMsg = `${t('teacher_scan_outcome')} - ${matchedTeacher.subject}`;
-      
       playBeep('success');
       
       setRecentScanResult({
@@ -248,7 +231,6 @@ export default function PointageTerminal() {
         isPaid: true
       });
 
-      // Log teacher Pointage in database
       try {
         const logged = await pointageService.log({
           personId: matchedTeacher.id,
@@ -258,27 +240,27 @@ export default function PointageTerminal() {
           details: `Pointage: Presence recorded`
         });
         setLogs(prev => [logged, ...prev]);
-        
-        // Also fire off status update for teacher check-in alert if needed
       } catch (err) {
         console.error(err);
       }
 
     } else {
-      // Not found
       playBeep('failure');
       setRecentScanResult({
         success: false,
         type: 'student',
         name: rawVal,
-        details: 'Scan échoué : Jeton non reconnu dans le système ! Veuillez d\'abord l\'associer.',
+        details: tr(
+          'فشل المسح: البطاقة غير مسجلة في النظام! يرجى ربطها أولاً.',
+          "Scan échoué : Jeton non reconnu dans le système ! Veuillez d'abord l'associer.",
+          'Scan failed: Token not recognized in system! Please assign it first.'
+        ),
         tokenId: rawVal,
         isPaid: false
       });
     }
 
     setManualScanInput('');
-    // Auto re-focus
     setTimeout(() => {
       rfidInputRef.current?.focus();
     }, 100);
@@ -287,13 +269,6 @@ export default function PointageTerminal() {
   const handleManualFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     handleScanToken(manualScanInput);
-  };
-
-  const clearAllLogs = async () => {
-    if (confirm('Effacer l\'historique définitif ?')) {
-      await pointageService.clearAll();
-      setLogs([]);
-    }
   };
 
   const handleAssignTokenSubmit = async (e: React.FormEvent) => {
@@ -307,7 +282,7 @@ export default function PointageTerminal() {
       if (assignTargetType === 'student') {
         const currentStudent = students.find(s => s.id === selectedPersonId);
         if (currentStudent) {
-          const updated = await studentsService.update(selectedPersonId, {
+          await studentsService.update(selectedPersonId, {
             ...currentStudent,
             tokenId: code
           });
@@ -316,7 +291,7 @@ export default function PointageTerminal() {
       } else {
         const currentTeacher = teachers.find(t => t.id === selectedPersonId);
         if (currentTeacher) {
-          const updated = await teachersService.update(selectedPersonId, {
+          await teachersService.update(selectedPersonId, {
             ...currentTeacher,
             tokenId: code
           });
@@ -327,33 +302,32 @@ export default function PointageTerminal() {
       setIsAssigning(false);
       setNewTokenCode('');
       setSelectedPersonId('');
-      
-      // Notify
-      alert('Jeton associé avec succès !');
-      
-      // Focus RFID
+      alert(tr('تم ربط البطاقة بنجاح!', 'Jeton associé avec succès !', 'Token assigned successfully!'));
       setTimeout(() => rfidInputRef.current?.focus(), 200);
     } catch (err: any) {
-      alert("Error: " + err.message);
+      alert(tr('خطأ: ', 'Erreur: ', 'Error: ') + err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6" id="pointage_terminal_page">
+    <div className={cn("max-w-7xl mx-auto px-4 sm:px-6 py-6", isRTL && "text-right")} id="pointage_terminal_page">
       {/* Title Header */}
-      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className={cn("mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4", isRTL && "md:flex-row-reverse")}>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900" id="terminal_header_title">
             {t('pointage_terminal')}
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Gérez l'accès physique en vérifiant instantanément l'état des paiements et effectuez le pointage automatique.
+            {tr(
+              'إدارة الدخول والتحقق الفوري من حالة الدفع وتسجيل الحضور تلقائياً.',
+              "Gérez l'accès physique en vérifiant instantanément l'état des paiements et effectuez le pointage automatique.",
+              'Manage gate access by verifying payment status and recording attendance automatically.'
+            )}
           </p>
         </div>
 
-        {/* Audio control + RFID stats banner */}
         <div className="flex items-center gap-3 self-start md:self-auto">
           <button 
             type="button"
@@ -363,10 +337,10 @@ export default function PointageTerminal() {
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100' 
                 : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
             }`}
-            title="Toggle Speaker beep sound"
+            title={tr('تشغيل / إيقاف الصوت', 'Activer/Désactiver le son', 'Toggle Speaker beep sound')}
           >
             {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
-            <span>{soundEnabled ? 'Son activé' : 'Son coupé'}</span>
+            <span>{soundEnabled ? tr('الصوت مفعل', 'Son activé', 'Sound on') : tr('الصوت مكتوم', 'Son coupé', 'Sound muted')}</span>
           </button>
 
           <button
@@ -384,11 +358,7 @@ export default function PointageTerminal() {
 
       {/* Main Terminal Grid */}
       <div className="max-w-3xl mx-auto">
-        
-        {/* Interaction Terminal UI */}
         <div className="space-y-6">
-          
-          {/* Active Reader Target / Scanner Core Graphic */}
           <div 
             onClick={() => rfidInputRef.current?.focus()}
             className={`p-8 rounded-2xl border-2 text-center transition-all cursor-pointer relative overflow-hidden bg-white ${
@@ -397,7 +367,6 @@ export default function PointageTerminal() {
                 : 'border-slate-150 shadow-sm hover:border-slate-300'
             }`}
           >
-            {/* Soft pulsing scanning beam */}
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent animate-pulse" />
 
             <div className="mx-auto w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center text-primary mb-4 transition-transform hover:scale-110">
@@ -405,19 +374,24 @@ export default function PointageTerminal() {
             </div>
 
             <h3 className="text-lg font-bold text-slate-800">
-              {rfidFocus ? 'Lecteur RFID connecté & prêt' : t('scan_instruction')}
+              {rfidFocus
+                ? tr('قارئ RFID متصل وجاهز', 'Lecteur RFID connecté & prêt', 'RFID reader connected & ready')
+                : t('scan_instruction')}
             </h3>
             <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-              Veuillez cliquer dans cette zone et badger, ou tapez manuellement le code du jeton ci-dessous.
+              {tr(
+                'انقر داخل هذه المنطقة ومرر البطاقة، أو أدخل رمز البطاقة يدوياً أدناه.',
+                'Veuillez cliquer dans cette zone et badger, ou tapez manuellement le code du jeton ci-dessous.',
+                'Click inside this box and scan, or manually enter the token code below.'
+              )}
             </p>
 
-            {/* Hidden Input field for RFID scanners (keyboard emulators) */}
             <form onSubmit={handleManualFormSubmit} className="mt-6 max-w-xs mx-auto">
               <div className="relative">
                 <input
                   ref={rfidInputRef}
                   type="text"
-                  placeholder="Ex: S101, T201..."
+                  placeholder={tr('مثال: S101, T201...', 'Ex: S101, T201...', 'Ex: S101, T201...')}
                   value={manualScanInput}
                   onChange={(e) => setManualScanInput(e.target.value)}
                   onFocus={() => setRfidFocus(true)}
@@ -430,26 +404,28 @@ export default function PointageTerminal() {
                   className="mt-2.5 w-full bg-slate-800 text-white hover:bg-slate-900 font-semibold py-2 rounded-lg text-xs transition-colors tracking-wide flex items-center justify-center gap-1.5"
                 >
                   <Keyboard size={14} />
-                  Valider & Simuler
+                  {tr('تأكيد ومعاينة', 'Valider & Simuler', 'Validate & Simulate')}
                 </button>
               </div>
             </form>
 
             <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
               <span className={`w-2.5 h-2.5 rounded-full ${rfidFocus ? 'bg-emerald-500 animate-ping' : 'bg-amber-400'}`} />
-              <span>{rfidFocus ? 'Statut: Prêt à badger' : 'Cliquez ici pour focaliser le terminal'}</span>
+              <span>
+                {rfidFocus
+                  ? tr('الحالة: جاهز للمسح', 'Statut: Prêt à badger', 'Status: Ready to scan')
+                  : tr('انقر هنا لتفعيل القارئ', 'Cliquez ici pour focaliser le terminal', 'Click here to focus terminal')}
+              </span>
             </div>
           </div>
 
-
-          {/* SCAN DETAILED SCREEN / OUTCOME CARD */}
           {recentScanResult ? (
             <div className={`p-6 rounded-2xl border transition-all duration-300 ${
               recentScanResult.success 
                 ? 'bg-emerald-50/50 border-emerald-150' 
                 : 'bg-rose-50/50 border-rose-150'
             }`}>
-              <div className="flex items-start gap-4">
+              <div className={cn("flex items-start gap-4", isRTL && "flex-row-reverse")}>
                 <div className={`p-3 rounded-full ${
                   recentScanResult.success ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
                 }`}>
@@ -459,7 +435,9 @@ export default function PointageTerminal() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
-                      {recentScanResult.type === 'student' ? 'Jeton Élève' : 'Jeton Enseignant'}
+                      {recentScanResult.type === 'student'
+                        ? tr('بطاقة تلميذ', 'Jeton Élève', 'Student Token')
+                        : tr('بطاقة أستاذ', 'Jeton Enseignant', 'Teacher Token')}
                     </span>
                     <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border">
                       ID: {recentScanResult.tokenId}
@@ -479,7 +457,7 @@ export default function PointageTerminal() {
                   <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
                     <div className="flex items-center gap-1.5 text-slate-500">
                       <Calendar size={13} />
-                      <span>{new Date().toLocaleTimeString()}</span>
+                      <span>{new Date().toLocaleTimeString(language === 'ar' ? 'ar-DZ' : language === 'fr' ? 'fr-FR' : 'en-GB')}</span>
                     </div>
 
                     {recentScanResult.type === 'student' && (
@@ -488,13 +466,13 @@ export default function PointageTerminal() {
                           ? 'bg-emerald-100 text-emerald-800' 
                           : 'bg-rose-100 text-rose-800'
                       }`}>
-                        {recentScanResult.success ? 'OK' : 'Declined'}
+                        {recentScanResult.success ? tr('مقبول', 'OK', 'OK') : tr('مرفوض', 'Refusé', 'Declined')}
                       </span>
                     )}
 
                     {recentScanResult.type === 'teacher' && (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">
-                        Pointage OK
+                        {tr('تم التسجيل', 'Pointage OK', 'Clock-in OK')}
                       </span>
                     )}
                   </div>
@@ -504,16 +482,15 @@ export default function PointageTerminal() {
           ) : (
             <div className="p-12 rounded-2xl border border-dashed border-slate-200 text-center bg-slate-50/50">
               <p className="text-slate-400 text-sm">
-                Aucun scan en cours. Présentez un jeton pour afficher ses données.
+                {tr(
+                  'لا يوجد مسح حالي. قم بتمرير بطاقة لعرض بياناتها.',
+                  'Aucun scan en cours. Présentez un jeton pour afficher ses données.',
+                  'No scan in progress. Present a token to view details.'
+                )}
               </p>
             </div>
           )}
-
-
-
-
         </div>
-
       </div>
 
       {/* TOKEN QUICK ASSOCIATION FLOW MODAL */}
@@ -526,15 +503,17 @@ export default function PointageTerminal() {
             </h3>
             
             <p className="text-xs text-slate-500 mb-4">
-              Associez un jeton physique à un profil pour qu'il soit opérationnel immédiatement.
+              {tr(
+                'اربط بطاقة فعلية بملف شخصي لتفعيلها فوراً.',
+                "Associez un jeton physique à un profil pour qu'il soit opérationnel immédiatement.",
+                'Link a physical token to a profile so it works immediately.'
+              )}
             </p>
 
             <form onSubmit={handleAssignTokenSubmit} className="space-y-4">
-              
-              {/* Type Switcher */}
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">
-                  Type de profil
+                  {tr('نوع الملف', 'Type de profil', 'Profile type')}
                 </label>
                 <div className="grid grid-cols-2 gap-2 text-center">
                   <button
@@ -549,7 +528,7 @@ export default function PointageTerminal() {
                         : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
-                    Élève
+                    {tr('تلميذ', 'Élève', 'Student')}
                   </button>
 
                   <button
@@ -564,22 +543,22 @@ export default function PointageTerminal() {
                         : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
-                    Enseignant
+                    {tr('أستاذ', 'Enseignant', 'Teacher')}
                   </button>
                 </div>
               </div>
 
-              {/* Selection Person */}
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">
-                  {assignTargetType === 'student' ? 'Sélectionner l\'élève' : 'Sélectionner l\'enseignant'}
+                  {assignTargetType === 'student'
+                    ? tr('اختر التلميذ', "Sélectionner l'élève", 'Select student')
+                    : tr('اختر الأستاذ', "Sélectionner l'enseignant", 'Select teacher')}
                 </label>
                 <select
                   required
                   value={selectedPersonId}
                   onChange={(e) => {
                     setSelectedPersonId(e.target.value);
-                    // Autofills existing if any
                     const item = assignTargetType === 'student' 
                       ? students.find(s => s.id === e.target.value)
                       : teachers.find(t => t.id === e.target.value);
@@ -591,25 +570,24 @@ export default function PointageTerminal() {
                   }}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white text-slate-700"
                 >
-                  <option value="">-- Sélectionner --</option>
+                  <option value="">{tr('-- اختر --', '-- Sélectionner --', '-- Select --')}</option>
                   
                   {assignTargetType === 'student' ? (
                     students.map(s => (
                       <option key={s.id} value={s.id}>
-                        {s.name} {s.tokenId ? `(Possède déjà: ${s.tokenId})` : '(Sans jeton)'}
+                        {s.name} {s.tokenId ? `(${s.tokenId})` : tr('(بدون بطاقة)', '(Sans jeton)', '(No token)')}
                       </option>
                     ))
                   ) : (
-                    teachers.map(t => (
-                      <option key={t.id} value={t.id}>
-                        {t.name} {t.tokenId ? `(Possède déjà: ${t.tokenId})` : '(Sans jeton)'}
+                    teachers.map(teach => (
+                      <option key={teach.id} value={teach.id}>
+                        {teach.name} {teach.tokenId ? `(${teach.tokenId})` : tr('(بدون بطاقة)', '(Sans jeton)', '(No token)')}
                       </option>
                     ))
                   )}
                 </select>
               </div>
 
-              {/* Input Code */}
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">
                   {t('token_id')}
@@ -625,11 +603,10 @@ export default function PointageTerminal() {
                   />
                 </div>
                 <p className="text-[10px] text-slate-400 mt-1">
-                  Astuce : Vous pouvez badger pour remplir ce champ automatiquement.
+                  {tr('ملاحظة: يمكنك تمرير البطاقة لملء هذا الحقل تلقائياً.', 'Astuce : Vous pouvez badger pour remplir ce champ automatiquement.', 'Tip: You can scan a token to auto-fill this field.')}
                 </p>
               </div>
 
-              {/* Submit Buttons */}
               <div className="flex gap-2.5 mt-6 pt-3 border-t border-slate-100">
                 <button
                   type="button"
@@ -639,21 +616,19 @@ export default function PointageTerminal() {
                   }}
                   className="w-1/2 border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold py-2.5 rounded-lg text-xs transition-colors"
                 >
-                  Annuler
+                  {tr('إلغاء', 'Annuler', 'Cancel')}
                 </button>
                 <button
                   type="submit"
                   className="w-1/2 bg-primary text-white hover:bg-primary/95 font-semibold py-2.5 rounded-lg text-xs transition-colors shadow-sm"
                 >
-                  Associer & Enregistrer
+                  {tr('ربط وحفظ', 'Associer & Enregistrer', 'Assign & Save')}
                 </button>
               </div>
-
             </form>
           </div>
         </div>
       )}
-
     </div>
   );
 }

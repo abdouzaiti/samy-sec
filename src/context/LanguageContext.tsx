@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-type Language = 'fr' | 'ar' | 'en';
+export type Language = 'ar' | 'fr' | 'en';
 
 interface Translations {
   [key: string]: {
@@ -10,87 +10,90 @@ interface Translations {
 
 export const translations: Translations = {
   // Sidebar & Navigation
-  dashboard: { fr: 'Tableau de bord', ar: 'Tableau de bord', en: 'Dashboard' },
-  timetable: { fr: 'Emploi du temps', ar: 'جدول التوقيت', en: 'Timetable' },
-  classes: { fr: 'Classes', ar: 'Classes', en: 'Classes' },
-  students: { fr: 'Étudiants', ar: 'Étudiants', en: 'Students' },
-  sessions: { fr: 'Séances', ar: 'Séances', en: 'Sessions' },
-  teachers: { fr: 'Enseignants', ar: 'Enseignants', en: 'Teachers' },
-  payments: { fr: 'Paiements', ar: 'Paiements', en: 'Payments' },
-  expenses: { fr: 'Charges & Bilan', ar: 'Charges & Bilan', en: 'Expenses & P&L' },
-  notifications: { fr: 'Notifications', ar: 'Notifications', en: 'Notifications' },
-  signOut: { fr: 'Déconnexion', ar: 'Déconnexion', en: 'Sign Out' },
-  
+  dashboard: { ar: 'لوحة التحكم', fr: 'Tableau de bord', en: 'Dashboard' },
+  timetable: { ar: 'جدول التوقيت', fr: 'Emploi du temps', en: 'Timetable' },
+  classes: { ar: 'الأقسام', fr: 'Classes', en: 'Classes' },
+  students: { ar: 'التلاميذ', fr: 'Étudiants', en: 'Students' },
+  sessions: { ar: 'الحصص', fr: 'Séances', en: 'Sessions' },
+  teachers: { ar: 'الأساتذة', fr: 'Enseignants', en: 'Teachers' },
+  payments: { ar: 'المدفوعات', fr: 'Paiements', en: 'Payments' },
+  expenses: { ar: 'المصاريف والميزانية', fr: 'Charges & Bilan', en: 'Expenses & P&L' },
+  notifications: { ar: 'التنبيهات', fr: 'Notifications', en: 'Notifications' },
+  signOut: { ar: 'تسجيل الخروج', fr: 'Déconnexion', en: 'Sign Out' },
+
   // Dashboard
-  overview: { fr: 'Aperçu', ar: 'Aperçu', en: 'Overview' },
-  welcome_back: { fr: 'Bienvenue sur le portail Samy Academy.', ar: 'Bienvenue sur le portail Samy Academy.', en: "Welcome back to Samy Academy portal." },
-  total_students: { fr: 'Total Étudiants', ar: 'Total Étudiants', en: 'Total Students' },
-  total_teachers: { fr: 'Total Enseignants', ar: 'Total Enseignants', en: 'Total Teachers' },
-  current_month_sessions: { fr: 'Suivi des 4 séances (Mois)', ar: 'Suivi des 4 séances (Mois)', en: '4 Sessions Tracking (Monthly)' },
-  manage_students: { fr: 'Gérez les inscriptions et suivis.', ar: 'Gérez les inscriptions et suivis.', en: 'Manage student enrollments and tracking.' },
-  monthly_revenue: { fr: 'Recettes Mensuelles', ar: 'Recettes Mensuelles', en: 'Monthly Revenue' },
-  pending_payments: { fr: 'Paiements en Attente', ar: 'Paiements en Attente', en: 'Pending Payments' },
-  revenue_growth: { fr: 'Croissance des Recettes', ar: 'Croissance des Recettes', en: 'Revenue Growth' },
-  real_time_alerts: { fr: 'Alertes en Temps Réel', ar: 'Alertes en Temps Réel', en: 'Real-time Alerts' },
-  view_all: { fr: 'Voir tout', ar: 'Voir tout', en: 'View all' },
+  overview: { ar: 'نظرة عامة', fr: 'Aperçu', en: 'Overview' },
+  welcome_back: { ar: 'مرحباً بكم في بوابة أكاديمية سامي.', fr: 'Bienvenue sur le portail Samy Academy.', en: 'Welcome back to Samy Academy portal.' },
+  total_students: { ar: 'إجمالي التلاميذ', fr: 'Total Étudiants', en: 'Total Students' },
+  total_teachers: { ar: 'إجمالي الأساتذة', fr: 'Total Enseignants', en: 'Total Teachers' },
+  current_month_sessions: { ar: 'متابعة 4 حصص (شهرياً)', fr: 'Suivi des 4 séances (Mois)', en: '4 Sessions Tracking (Monthly)' },
+  manage_students: { ar: 'إدارة التسجيلات ومتابعة التلاميذ.', fr: 'Gérez les inscriptions et suivis.', en: 'Manage student enrollments and tracking.' },
+  monthly_revenue: { ar: 'المداخيل الشهرية', fr: 'Recettes Mensuelles', en: 'Monthly Revenue' },
+  pending_payments: { ar: 'المدفوعات المعلقة', fr: 'Paiements en Attente', en: 'Pending Payments' },
+  revenue_growth: { ar: 'نمو المداخيل', fr: 'Croissance des Recettes', en: 'Revenue Growth' },
+  real_time_alerts: { ar: 'تنبيهات فورية', fr: 'Alertes en Temps Réel', en: 'Real-time Alerts' },
+  view_all: { ar: 'عرض الكل', fr: 'Voir tout', en: 'View all' },
 
   // Classes Page
-  academic_classes: { fr: 'Classes Académiques', ar: 'Classes Académiques', en: 'Academic Classes' },
-  manage_rosters: { fr: 'Gérez les listes et les tarifs.', ar: 'Gérez les listes et les tarifs.', en: 'Manage class rosters and subscription prices.' },
-  create_class: { fr: 'Nouvelle Classe', ar: 'Nouvelle Classe', en: 'New Class' },
-  program_selector: { fr: 'Sélecteur de Programme', ar: 'Sélecteur de Programme', en: 'Program Selector' },
-  subscription: { fr: 'Abonnement', ar: 'Abonnement', en: 'Subscription' },
-  monthly_price: { fr: 'Prix Mensuel', ar: 'Prix Mensuel', en: 'Monthly Price' },
-  search_student: { fr: 'Rechercher un étudiant...', ar: 'Rechercher un étudiant...', en: 'Search student...' },
-  student_name: { fr: 'Nom de l\'étudiant', ar: 'Nom de l\'étudiant', en: 'Student Name' },
-  parent_phone: { fr: 'Tél Parent', ar: 'Tél Parent', en: 'Parent Phone' },
-  status: { fr: 'État', ar: 'État', en: 'Status' },
-  print_receipt: { fr: 'Imprimer Reçu', ar: 'Imprimer Reçu', en: 'Print Receipt' },
-  remove: { fr: 'Supprimer', ar: 'Supprimer', en: 'Remove' },
-  add_student: { fr: 'Ajouter Étudiant', ar: 'Ajouter Étudiant', en: 'Add Student' },
-  paid: { fr: 'Payé', ar: 'Payé', en: 'Paid' },
-  unpaid: { fr: 'Non Payé', ar: 'Non Payé', en: 'Unpaid' },
-  pending: { fr: 'En attente', ar: 'En attente', en: 'Pending' },
+  academic_classes: { ar: 'الأقسام الدراسية', fr: 'Classes Académiques', en: 'Academic Classes' },
+  manage_rosters: { ar: 'إدارة قوائم التلاميذ وأسعار الاشتراكات.', fr: 'Gérez les listes et les tarifs.', en: 'Manage class rosters and subscription prices.' },
+  create_class: { ar: 'قسم جديد', fr: 'Nouvelle Classe', en: 'New Class' },
+  class_name: { ar: 'اسم القسم', fr: 'Nom de la classe', en: 'Class Name' },
+  description: { ar: 'الوصف', fr: 'Description', en: 'Description' },
+  program_selector: { ar: 'قائمة الأقسام', fr: 'Sélecteur de Programme', en: 'Program Selector' },
+  subscription: { ar: 'الاشتراك', fr: 'Abonnement', en: 'Subscription' },
+  monthly_price: { ar: 'السعر الشهري', fr: 'Prix Mensuel', en: 'Monthly Price' },
+  search_student: { ar: 'البحث عن تلميذ...', fr: 'Rechercher un étudiant...', en: 'Search student...' },
+  student_name: { ar: 'اسم التلميذ', fr: "Nom de l'étudiant", en: 'Student Name' },
+  parent_phone: { ar: 'هاتف الولي', fr: 'Tél Parent', en: 'Parent Phone' },
+  status: { ar: 'الحالة', fr: 'État', en: 'Status' },
+  print_receipt: { ar: 'طباعة الوصل', fr: 'Imprimer Reçu', en: 'Print Receipt' },
+  remove: { ar: 'حذف', fr: 'Supprimer', en: 'Remove' },
+  add_student: { ar: 'إضافة تلميذ', fr: 'Ajouter Étudiant', en: 'Add Student' },
+  paid: { ar: 'مدفوع', fr: 'Payé', en: 'Paid' },
+  unpaid: { ar: 'غير مدفوع', fr: 'Non Payé', en: 'Unpaid' },
+  pending: { ar: 'قيد الانتظار', fr: 'En attente', en: 'Pending' },
 
   // Teachers Page
-  staff_management: { fr: 'Gérez les salaires et affectations.', ar: 'Gérez les salaires et affectations.', en: 'Manage staff salaries and assignments.' },
-  staff_member: { fr: 'Membre du staff', ar: 'Membre du staff', en: 'Staff Member' },
-  subject: { fr: 'Matière', ar: 'Matière', en: 'Subject' },
-  salary: { fr: 'Salaire', ar: 'Salaire', en: 'Salary' },
-  pay_salary: { fr: 'Payer Salaire', ar: 'Payer Salaire', en: 'Pay Salary' },
-  payment_month: { fr: 'Mois de paiement', ar: 'Mois de paiement', en: 'Payment Month' },
-  total_payroll: { fr: 'Masse Salariale', ar: 'Masse Salariale', en: 'Total Payroll' },
-  batch_pay: { fr: 'Tout Payer', ar: 'Tout Payer', en: 'Batch Pay All' },
-  upcoming_exams: { fr: 'Examens à venir', ar: 'Examens à venir', en: 'Upcoming Exams' },
+  staff_management: { ar: 'إدارة الرواتب وتعيينات الأساتذة.', fr: 'Gérez les salaires et affectations.', en: 'Manage staff salaries and assignments.' },
+  staff_member: { ar: 'الأستاذ', fr: 'Membre du staff', en: 'Staff Member' },
+  subject: { ar: 'المادة', fr: 'Matière', en: 'Subject' },
+  salary: { ar: 'الراتب', fr: 'Salaire', en: 'Salary' },
+  pay_salary: { ar: 'دفع الراتب', fr: 'Payer Salaire', en: 'Pay Salary' },
+  payment_month: { ar: 'شهر الدفع', fr: 'Mois de paiement', en: 'Payment Month' },
+  total_payroll: { ar: 'كتلة الأجور', fr: 'Masse Salariale', en: 'Total Payroll' },
+  batch_pay: { ar: 'دفع للجميع', fr: 'Tout Payer', en: 'Batch Pay All' },
+  upcoming_exams: { ar: 'الامتحانات القادمة', fr: 'Examens à venir', en: 'Upcoming Exams' },
 
   // Login
-  welcome: { fr: 'Bienvenue à Samy Academy', ar: 'Bienvenue à Samy Academy', en: 'Welcome to Samy Academy' },
-  login_desc: { fr: 'Entrez vos identifiants pour accéder au portail.', ar: 'Entrez vos identifiants pour accéder au portail.', en: 'Enter your credentials to access the portal.' },
-  signin: { fr: 'Se Connecter', ar: 'Se Connecter', en: 'Sign In' },
-  email: { fr: 'Email', ar: 'Email', en: 'Email' },
-  password: { fr: 'Mot de passe', ar: 'Mot de passe', en: 'Password' },
-  
+  welcome: { ar: 'مرحباً بكم في أكاديمية سامي', fr: 'Bienvenue à Samy Academy', en: 'Welcome to Samy Academy' },
+  login_desc: { ar: 'أدخل بيانات الدخول للوصول إلى البوابة.', fr: 'Entrez vos identifiants pour accéder au portail.', en: 'Enter your credentials to access the portal.' },
+  signin: { ar: 'تسجيل الدخول', fr: 'Se Connecter', en: 'Sign In' },
+  email: { ar: 'البريد الإلكتروني', fr: 'Email', en: 'Email' },
+  password: { ar: 'كلمة المرور', fr: 'Mot de passe', en: 'Password' },
+
   // Misc
-  currency: { fr: 'DA', ar: 'DA', en: 'DA' },
-  cash_payment: { fr: 'Paiement en espèces', ar: 'Paiement en espèces', en: 'Cash payment' },
-  
+  currency: { ar: 'د.ج', fr: 'DA', en: 'DA' },
+  cash_payment: { ar: 'دفع نقدي', fr: 'Paiement en espèces', en: 'Cash payment' },
+
   // Pointage Terminal
-  pointage_terminal: { fr: 'Terminal d\'Entrée', ar: 'Terminal d\'Entrée', en: 'Gate Token Terminal' },
-  scan_instruction: { fr: 'Veuillez scanner un jeton (RFID/Simulation)', ar: 'Veuillez scanner un jeton (RFID/Simulation)', en: 'Please scan a token (RFID or Simulation)' },
-  pointage_logs: { fr: 'Historique des Pointages', ar: 'Historique des Pointages', en: 'Scans & Attendance Log' },
-  assign_token: { fr: 'Associer Jeton', ar: 'Associer Jeton', en: 'Assign Token' },
-  token_id: { fr: 'Code Jeton', ar: 'Code Jeton', en: 'Token ID' },
-  no_token_assigned: { fr: 'Aucun jeton associé', ar: 'Aucun jeton associé', en: 'No token assigned' },
-  student_scan_outcome_paid: { fr: 'Élève en règle - Accès Autorisé ✓', ar: 'Élève en règle - Accès Autorisé ✓', en: 'Student paid - Access authorized ✓' },
-  student_scan_outcome_unpaid: { fr: 'Élève non à jour - Accès Bloqué ✗', ar: 'Élève non à jour - Accès Bloqué ✗', en: 'Student unpaid - Access blocked! ✗' },
-  teacher_scan_outcome: { fr: 'Présence Enseignante Enregistrée ✓', ar: 'Présence Enseignante Enregistrée ✓', en: 'Teacher clock-in attendance registered ✓' },
-  clear_logs: { fr: 'Effacer l\'historique', ar: 'Effacer l\'historique', en: 'Clear logs' },
+  pointage_terminal: { ar: 'بوابة تسجيل الحضور', fr: "Terminal d'Entrée", en: 'Gate Token Terminal' },
+  scan_instruction: { ar: 'يرجى تمرير البطاقة (RFID أو تجريبي)', fr: 'Veuillez scanner un jeton (RFID/Simulation)', en: 'Please scan a token (RFID or Simulation)' },
+  pointage_logs: { ar: 'سجل الحضور والدخول', fr: 'Historique des Pointages', en: 'Scans & Attendance Log' },
+  assign_token: { ar: 'ربط بطاقة', fr: 'Associer Jeton', en: 'Assign Token' },
+  token_id: { ar: 'رمز البطاقة', fr: 'Code Jeton', en: 'Token ID' },
+  no_token_assigned: { ar: 'لا توجد بطاقة', fr: 'Aucun jeton associé', en: 'No token assigned' },
+  student_scan_outcome_paid: { ar: 'التلميذ مسدد - الدخول مسموح ✓', fr: 'Élève en règle - Accès Autorisé ✓', en: 'Student paid - Access authorized ✓' },
+  student_scan_outcome_unpaid: { ar: 'التلميذ غير مسدد - الدخول مرفوض ✗', fr: 'Élève non à jour - Accès Bloqué ✗', en: 'Student unpaid - Access blocked! ✗' },
+  teacher_scan_outcome: { ar: 'تم تسجيل حضور الأستاذ ✓', fr: 'Présence Enseignante Enregistrée ✓', en: 'Teacher clock-in attendance registered ✓' },
+  clear_logs: { ar: 'مسح السجل', fr: "Effacer l'historique", en: 'Clear logs' },
 };
 
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: (key: string) => string;
+  tr: (ar: string, fr: string, en: string) => string;
   isRTL: boolean;
 }
 
@@ -98,8 +101,13 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<Language>(() => {
+    if (!localStorage.getItem('lang_default_ar_v1')) {
+      localStorage.setItem('lang_default_ar_v1', '1');
+      localStorage.setItem('lang', 'ar');
+      return 'ar';
+    }
     const saved = localStorage.getItem('lang') as Language;
-    return (saved && saved !== 'ar') ? saved : 'fr';
+    return (saved === 'ar' || saved === 'fr' || saved === 'en') ? saved : 'ar';
   });
 
   useEffect(() => {
@@ -110,13 +118,19 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const t = (key: string) => {
     if (!translations[key]) return key;
-    return translations[key][language] || translations[key]['fr'];
+    return translations[key][language] || translations[key]['ar'];
+  };
+
+  const tr = (ar: string, fr: string, en: string) => {
+    if (language === 'ar') return ar;
+    if (language === 'fr') return fr;
+    return en;
   };
 
   const isRTL = language === 'ar';
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, isRTL }}>
+    <LanguageContext.Provider value={{ language, setLanguage, t, tr, isRTL }}>
       {children}
     </LanguageContext.Provider>
   );

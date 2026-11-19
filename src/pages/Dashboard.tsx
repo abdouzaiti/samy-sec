@@ -74,7 +74,7 @@ function StatCard({ title, value, change, icon: Icon, trend, subtext }: any) {
 }
 
 export function Dashboard() {
-  const { t, isRTL } = useLanguage();
+  const { t, tr, isRTL } = useLanguage();
   const { activeRole, switchRole } = useAuth();
   const navigate = useNavigate();
 
@@ -125,7 +125,7 @@ export function Dashboard() {
   };
 
   const getClassClassName = (classId: string) => {
-    return classes.find(c => c.id === classId)?.name || 'Unknown Class';
+    return classes.find(c => c.id === classId)?.name || tr('قسم غير معروف', 'Classe inconnue', 'Unknown Class');
   };
 
   // Dynamic statistics
@@ -134,7 +134,6 @@ export function Dashboard() {
   const totalClasses = classes.length;
 
   // Calcul d'argent récolté (Revenues)
-  // Since paymentStatus is removed in favor of sessions, we assume all enrolled students are contributing to revenue.
   const paidStudents = students;
   const totalRevenue = students.reduce((acc, curr) => acc + getClassPrice(curr.classId), 0);
 
@@ -155,10 +154,11 @@ export function Dashboard() {
       // Update local state smoothly
       setStudents(prev => prev.map(s => s.id === studentId ? { ...s } : s));
       
-      setLastPaymentAlert(isRTL 
-        ? `Encaissement réussi pour ${match.name} !` 
-        : `Successfully collected payment for ${match.name}!`
-      );
+      setLastPaymentAlert(tr(
+        `تم استلام المبلغ بنجاح للتلميذ ${match.name}!`,
+        `Encaissement réussi pour ${match.name} !`,
+        `Successfully collected payment for ${match.name}!`
+      ));
       setTimeout(() => setLastPaymentAlert(null), 4000);
     } catch (e) {
       console.error(e);
@@ -183,14 +183,13 @@ export function Dashboard() {
         paymentStatus: 'Unpaid'
       });
 
-      // Insert state natively
       setStudents(prev => [newStudent, ...prev]);
-      setRegSuccess(isRTL 
-        ? `Élève ${regName} inscrit avec succès !`
-        : `Student ${regName} enrolled successfully!`
-      );
+      setRegSuccess(tr(
+        `تم تسجيل التلميذ ${regName} بنجاح!`,
+        `Élève ${regName} inscrit avec succès !`,
+        `Student ${regName} enrolled successfully!`
+      ));
       
-      // Reset
       setRegName('');
       setRegPhone('');
       setRegClassId('');
@@ -210,17 +209,6 @@ export function Dashboard() {
     );
   }
 
-  // Bar chart of Class Roster statistics
-  const classStatsChart = classes.map(c => {
-    const studentsInClass = students.filter(s => s.classId === c.id);
-    const paidInClass = studentsInClass; // all students
-    return {
-      name: c.name.split(' ').slice(0, 2).join(' '),
-      total: studentsInClass.length,
-      paid: paidInClass.length
-    };
-  });
-
   return (
     <div className="space-y-12 animate-in font-sans">
       
@@ -233,22 +221,22 @@ export function Dashboard() {
           <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
             <span className="text-3xl md:text-5xl font-black text-primary tracking-tighter">
               {activeRole === 'director' 
-                ? (isRTL ? "Espace Directeur" : "Executive Suites") 
-                : (isRTL ? "Bureau Secrétariat" : "Operational Desk")}
+                ? tr('فضاء المدير', 'Espace Directeur', 'Executive Suites') 
+                : tr('مكتب الأمانة', 'Bureau Secrétariat', 'Operational Desk')}
             </span>
-              <span className={cn(
+            <span className={cn(
               "text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border",
               activeRole === 'director' 
                 ? "bg-amber-50 text-amber-800 border-amber-200" 
                 : "bg-blue-50 text-primary border-blue-200"
             )}>
-              {activeRole === 'director' ? (isRTL ? "Directeur" : "Director") : "Secretaries"}
+              {activeRole === 'director' ? tr('المدير', 'Directeur', 'Director') : tr('الأمانة', 'Secrétaires', 'Secretaries')}
             </span>
           </div>
           <p className="text-slate-500 mt-2 text-base font-medium">
             {activeRole === 'director' 
-              ? (isRTL ? "Vue globale financière, structurelle et masse salariale." : "High-level school accounting and financial control panel.")
-              : (isRTL ? "Enregistrements rapides, gestion des appels et encaissements des élèves." : "Daily interactive workspace: enrollments, collections, and receipt desk.")}
+              ? tr('نظرة مالية وهيكلية شاملة ومتابعة كتلة الأجور.', 'Vue globale financière, structurelle et masse salariale.', 'High-level school accounting and financial control panel.')
+              : tr('التسجيل السريع، إدارة المكالمات وتحصيل مستحقات التلاميذ.', 'Enregistrements rapides, gestion des appels et encaissements des élèves.', 'Daily interactive workspace: enrollments, collections, and receipt desk.')}
           </p>
         </div>
 
@@ -267,7 +255,7 @@ export function Dashboard() {
             )}
           >
             <Shield size={14} className={activeRole === 'director' ? "text-accent" : ""} />
-            {isRTL ? "Directeur" : "Director"}
+            {tr('المدير', 'Directeur', 'Director')}
           </button>
           <button
             onClick={() => switchRole('secretary')}
@@ -279,7 +267,7 @@ export function Dashboard() {
             )}
           >
             <Activity size={14} className={activeRole === 'secretary' ? "text-primary" : ""} />
-            {isRTL ? "Secrétaires" : "Secretaries"}
+            {tr('الأمانة', 'Secrétaires', 'Secretaries')}
           </button>
         </div>
       </div>
@@ -301,34 +289,34 @@ export function Dashboard() {
             <StatCard 
               title={t('total_students')} 
               value={totalStudents} 
-              change={`${paidStudents.length} Payés`} 
+              change={`${paidStudents.length} ${tr('مسدد', 'Payés', 'Paid')}`} 
               icon={Users} 
               trend="up" 
-              subtext={isRTL ? "Élèves enregistrés en classe" : "Active classroom seats filled"}
+              subtext={tr('تلاميذ مسجلون في الأقسام', 'Élèves enregistrés en classe', 'Active classroom seats filled')}
             />
             <StatCard 
               title={t('total_teachers')} 
               value={totalTeachers} 
-              change={`${teachers.filter(t => t.paymentStatus === 'Paid').length} Payés`} 
+              change={`${teachers.filter(t => t.paymentStatus === 'Paid').length} ${tr('مدفوع', 'Payés', 'Paid')}`} 
               icon={UserSquare2} 
               trend="up" 
-              subtext={isRTL ? "Corps enseignant Samy Academy" : "Instructors currently on staff"}
+              subtext={tr('طاقم التدريس بأكاديمية سامي', 'Corps enseignant Samy Academy', 'Instructors currently on staff')}
             />
             <StatCard 
-              title={isRTL ? "Recettes Totales" : "Total School Revenue"} 
+              title={tr('إجمالي المداخيل', 'Recettes Totales', 'Total School Revenue')} 
               value={`${totalRevenue.toLocaleString()} ${t('currency')}`} 
-              change={`${outstandingRevenue.toLocaleString()} En attente`} 
+              change={`${outstandingRevenue.toLocaleString()} ${tr('قيد الانتظار', 'En attente', 'Pending')}`} 
               icon={TrendingUp} 
               trend="up" 
-              subtext={isRTL ? "Exclu les frais en retard" : "Computed based on paid invoices"}
+              subtext={tr('محسوبة حسب الفواتير المسددة', 'Exclu les frais en retard', 'Computed based on paid invoices')}
             />
             <StatCard 
-              title={isRTL ? "Masse Salariale / Déficit" : "Confidential Staff Payroll"} 
+              title={tr('كتلة الأجور / الرصيد', 'Masse Salariale / Déficit', 'Confidential Staff Payroll')} 
               value={`${totalPayroll.toLocaleString()} ${t('currency')}`} 
-              change={schoolNetProfit >= 0 ? `+${schoolNetProfit.toLocaleString()} Net` : `${schoolNetProfit.toLocaleString()} Net`}
+              change={schoolNetProfit >= 0 ? `+${schoolNetProfit.toLocaleString()} ${tr('صافي', 'Net', 'Net')}` : `${schoolNetProfit.toLocaleString()} ${tr('صافي', 'Net', 'Net')}`}
               icon={Coins} 
               trend={schoolNetProfit >= 0 ? "up" : "down"} 
-              subtext={isRTL ? "Coût total mensuel du personnel" : "Total expenses paid out of lessons"}
+              subtext={tr('التكلفة الشهرية للأساتذة', 'Coût total mensuel du personnel', 'Total expenses paid out of lessons')}
             />
           </div>
 
@@ -339,18 +327,18 @@ export function Dashboard() {
             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm col-span-1 flex flex-col justify-between">
               <div>
                 <h3 className={cn("text-lg font-black text-primary tracking-tight", isRTL && "text-right")}>
-                  {isRTL ? "Remplissage & Encaissements" : "Class Occupancy Analysis"}
+                  {tr('نسبة الامتلاء والتحصيل', 'Remplissage & Encaissements', 'Class Occupancy Analysis')}
                 </h3>
                 <p className={cn("text-xs text-slate-400 font-medium mt-1 mb-6", isRTL && "text-right")}>
-                  {isRTL ? "Proportion d'étudiants ayant réglé leurs frais par niveau." : "Distribution of paid subscribers per class category."}
+                  {tr('توزيع التلاميذ المسددين حسب كل قسم.', "Proportion d'étudiants ayant réglé leurs frais par niveau.", 'Distribution of paid subscribers per class category.')}
                 </p>
               </div>
 
               {/* Mini responsive visual list */}
               <div className="space-y-4">
-                {classes.map((c, i) => {
+                {classes.map((c) => {
                   const items = students.filter(s => s.classId === c.id);
-                  const paidCount = items.length; // all active students
+                  const paidCount = items.length;
                   const ratio = items.length > 0 ? 100 : 0;
                   
                   return (
@@ -358,7 +346,7 @@ export function Dashboard() {
                       <div className={cn("flex justify-between items-end text-xs font-bold text-slate-700", isRTL && "flex-row-reverse")}>
                         <span className="truncate max-w-40 font-black">{c.name}</span>
                         <span className="text-slate-400 font-mono text-[10px]">
-                          {paidCount}/{items.length} {isRTL ? "Payés" : "Paid"}
+                          {paidCount}/{items.length} {tr('مسدد', 'Payés', 'Paid')}
                         </span>
                       </div>
                       <div className="w-full bg-slate-50 h-2 rounded-full overflow-hidden border border-slate-100">
@@ -380,14 +368,12 @@ export function Dashboard() {
                   onClick={() => navigate('/classes')}
                   className="text-xs font-black text-primary hover:text-accent tracking-widest uppercase transition-colors"
                 >
-                  {isRTL ? "Gérer les tarifications →" : "Optimize Class Prices →"}
+                  {tr('إدارة الأسعار والأقسام ←', 'Gérer les tarifications →', 'Optimize Class Prices →')}
                 </button>
               </div>
             </div>
 
-
           </div>
-
 
         </div>
       )}
@@ -399,28 +385,28 @@ export function Dashboard() {
           {/* Operational Secretary stats (No sensitive salary details) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <StatCard 
-              title={isRTL ? "Élèves Scolarisés" : "Active Pupils Registered"} 
+              title={tr('التلاميذ المسجلون', 'Élèves Scolarisés', 'Active Pupils Registered')} 
               value={totalStudents} 
-              change={`${paidStudents.length} en règle`} 
+              change={`${paidStudents.length} ${tr('في وضعية نظامية', 'en règle', 'in order')}`} 
               icon={Users} 
               trend="up" 
-              subtext={isRTL ? "Effectif total de l'école" : "Total roster footprint"}
+              subtext={tr('التعداد الإجمالي للأكاديمية', "Effectif total de l'école", 'Total roster footprint')}
             />
             <StatCard 
-              title={isRTL ? "Madaikhil El-Assassi (Frais Reçus)" : "Tuition Cash Collected"} 
+              title={tr('المداخيل المحصلة', 'Frais Reçus', 'Tuition Cash Collected')} 
               value={`${totalRevenue.toLocaleString()} ${t('currency')}`} 
-              change={isRTL ? "Caisse de l'école" : "Validated cashier total"}
+              change={tr('صندوق الأكاديمية', "Caisse de l'école", 'Validated cashier total')}
               icon={Coins} 
               trend="up" 
-              subtext={isRTL ? "Montant total récolté à ce jour" : "Based strictly on student tuition"}
+              subtext={tr('إجمالي المبالغ المستلمة حتى الآن', 'Montant total récolté à ce jour', 'Based strictly on student tuition')}
             />
             <StatCard 
-              title={isRTL ? "Reste En Souffrance (Retards)" : "Outstanding Tuition Debts"} 
+              title={tr('المستحقات غير المدفوعة', 'Reste En Souffrance (Retards)', 'Outstanding Tuition Debts')} 
               value={`${outstandingRevenue.toLocaleString()} ${t('currency')}`} 
-              change={`${pendingStudents.length} élèves restants`} 
+              change={`${pendingStudents.length} ${tr('تلميذ متبقي', 'élèves restants', 'students left')}`} 
               icon={AlertCircle} 
               trend="down" 
-              subtext={isRTL ? "Frais de scolarité non payés" : "Target call & collection queue"}
+              subtext={tr('رسوم تمدرس غير مسددة', 'Frais de scolarité non payés', 'Target call & collection queue')}
             />
           </div>
 
@@ -430,16 +416,16 @@ export function Dashboard() {
             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between">
               <div>
                 <div className={cn("flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-50", isRTL && "flex-row-reverse")}>
-                  <div>
+                  <div className={cn(isRTL && "text-right")}>
                     <h3 className="text-lg font-black text-primary tracking-tight">
-                      {isRTL ? "Guichet de Recouvrement Express" : "Desk Invoicing & Cash Register"}
+                      {tr('شباك التحصيل السريع', 'Guichet de Recouvrement Express', 'Desk Invoicing & Cash Register')}
                     </h3>
                     <p className="text-xs text-slate-400 font-medium mt-1">
-                      {isRTL ? "Cliquez pour valider le paiement d'un élève et générer son reçu" : "Direct cash register: accept tuition fees and print official receipts."}
+                      {tr('انقر لتأكيد دفع تلميذ وإصدار وصل التسديد', "Cliquez pour valider le paiement d'un élève et générer son reçu", 'Direct cash register: accept tuition fees and print official receipts.')}
                     </p>
                   </div>
                   <span className="text-[10px] font-black uppercase tracking-widest bg-emerald-50 border border-emerald-100 text-emerald-700 px-3 py-1.5 rounded-xl">
-                    {isRTL ? "Traitement Direct" : "Instant DB Updates"}
+                    {tr('معالجة مباشرة', 'Traitement Direct', 'Instant DB Updates')}
                   </span>
                 </div>
 
@@ -449,7 +435,7 @@ export function Dashboard() {
                     type="text"
                     value={unpaidSearch}
                     onChange={e => setUnpaidSearch(e.target.value)}
-                    placeholder={isRTL ? "Rechercher un élève à encaisser..." : "Search pupil to collect payment..."}
+                    placeholder={tr('البحث عن تلميذ للتحصيل...', 'Rechercher un élève à encaisser...', 'Search pupil to collect payment...')}
                     className={cn(
                       "w-full px-4 py-3 bg-slate-50 text-sm font-bold rounded-2xl border border-slate-100 focus:outline-none focus:ring-4 focus:ring-primary/5 placeholder:text-slate-400 placeholder:font-bold",
                       isRTL && "text-right"
@@ -463,7 +449,7 @@ export function Dashboard() {
                     .filter(s => s.name.toLowerCase().includes(unpaidSearch.toLowerCase()))
                     .length === 0 ? (
                       <div className="p-8 text-center text-slate-400 font-bold border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/50">
-                        {isRTL ? "Aucun élève en retard ou ne correspondant à la recherche." : "No outstanding unpaid items matching."}
+                        {tr('لا يوجد تلاميذ متأخرون عن الدفع حالياً.', 'Aucun élève en retard ou ne correspondant à la recherche.', 'No outstanding unpaid items matching.')}
                       </div>
                     ) : (
                       pendingStudents
@@ -492,9 +478,9 @@ export function Dashboard() {
 
                               <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse self-end sm:self-center")}>
                                 <div className="text-right">
-                                  <div className="font-extrabold text-slate-900 text-sm">{val.toLocaleString()} DA</div>
+                                  <div className="font-extrabold text-slate-900 text-sm">{val.toLocaleString()} {t('currency')}</div>
                                   <div className={cn("text-[10px] font-black uppercase text-slate-500", isRTL && "text-left")}>
-                                    Actif
+                                    {tr('نشط', 'Actif', 'Active')}
                                   </div>
                                 </div>
 
@@ -503,7 +489,7 @@ export function Dashboard() {
                                   className="bg-primary text-white font-black text-xs px-4 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-md shadow-primary/10 flex items-center gap-1.5"
                                 >
                                   <Coins size={14} />
-                                  <span>Encaisser Cash</span>
+                                  <span>{tr('تحصيل نقدي', 'Encaisser Cash', 'Collect Cash')}</span>
                                 </button>
                               </div>
                             </div>
@@ -517,11 +503,15 @@ export function Dashboard() {
               <div className={cn("mt-6 p-4 rounded-2xl bg-amber-50/70 border border-amber-100 flex gap-3 text-amber-900 text-xs font-semibold leading-relaxed", isRTL && "flex-row-reverse text-right")}>
                 <span className="text-base select-none">📞</span>
                 <div>
-                  <h6 className="font-black text-amber-950 mb-0.5">{isRTL ? "Action Secrétariat : Phoning des Imback" : "Outstanding Call Reminders"}</h6>
+                  <h6 className="font-black text-amber-950 mb-0.5">
+                    {tr('تذكير الأمانة: متابعة الدفع', 'Action Secrétariat : Suivi des paiements', 'Outstanding Call Reminders')}
+                  </h6>
                   <p className="text-slate-600">
-                    {isRTL 
-                      ? "Un parent tarde à payer ? Appuyez sur le bouton vert d'appel ou servez-vous du numéro affiché pour accélérer le recouvrement mensuel."
-                      : "Click parent phone details above to rapidly phone outstanding tuition accounts."}
+                    {tr(
+                      'في حال تأخر ولي الأمر عن التسديد، استعمل رقم الهاتف الظاهر أعلاه للتواصل السريع وتسريع التحصيل الشهري.',
+                      'Un parent tarde à payer ? Appuyez sur le bouton appel ou servez-vous du numéro affiché pour accélérer le recouvrement mensuel.',
+                      'Click parent phone details above to rapidly phone outstanding tuition accounts.'
+                    )}
                   </p>
                 </div>
               </div>

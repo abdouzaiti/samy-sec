@@ -6,15 +6,11 @@ import {
   CheckCircle2, 
   Phone, 
   MessageCircle, 
-  CreditCard, 
   Check, 
   Loader2, 
   Search, 
-  Filter, 
   ArrowRight, 
-  GraduationCap, 
   Clock,
-  Sparkles,
   AlertOctagon,
   RefreshCw
 } from 'lucide-react';
@@ -38,13 +34,13 @@ export interface AttendanceNotification {
   presentCount: number;
   absentCount: number;
   sessions: (boolean | string)[];
-  urgency: 'critical' | 'warning'; // critical for 4/4 sessions, warning for 3/4 sessions
+  urgency: 'critical' | 'warning';
   timestamp: string;
   isRead?: boolean;
 }
 
 export function Notifications() {
-  const { t, isRTL } = useLanguage();
+  const { t, tr, language, isRTL } = useLanguage();
   const navigate = useNavigate();
 
   const [students, setStudents] = useState<Student[]>([]);
@@ -91,9 +87,7 @@ export function Notifications() {
     return () => clearInterval(interval);
   }, []);
 
-  // Compute all unpaid notifications with >= 3 completed sessions (present or absent)
   const classesMap = new Map(classes.map(c => [c.id, c]));
-
   const notifications: AttendanceNotification[] = [];
 
   students.forEach(student => {
@@ -109,7 +103,6 @@ export function Notifications() {
       const classKey = targetClass ? targetClass.id : cid;
       const classAtt = attData[classKey] || attData[cid] || {};
 
-      // Check all 12 months or active months
       for (let month = 1; month <= 12; month++) {
         const rawSessions = classAtt[month] || classAtt[String(month)] || [];
         if (Array.isArray(rawSessions) && rawSessions.length > 0) {
@@ -127,7 +120,6 @@ export function Notifications() {
 
           const isPaid = paidMonths.includes(month);
 
-          // Notification triggers from Session 3 upwards until the student pays for that month
           if (completedCount >= 3 && !isPaid) {
             const notifId = `${student.id}_${classKey}_m${month}`;
             notifications.push({
@@ -138,7 +130,7 @@ export function Notifications() {
               secondaryPhone: student.secondaryPhone,
               tokenId: student.tokenId,
               classId: classKey,
-              className: targetClass ? targetClass.name : 'Classe',
+              className: targetClass ? targetClass.name : tr('قسم', 'Classe', 'Class'),
               classPrice: targetClass ? targetClass.price : 0,
               month,
               completedSessions: completedCount,
@@ -155,7 +147,6 @@ export function Notifications() {
     });
   });
 
-  // Sort: Critical (4/4) first, then Warning (3/4), then by student name
   notifications.sort((a, b) => {
     if (a.urgency !== b.urgency) {
       return a.urgency === 'critical' ? -1 : 1;
@@ -174,7 +165,6 @@ export function Notifications() {
         ? currentPaidMonths
         : [...currentPaidMonths, notif.month];
 
-      // Update student on Supabase
       const updatedStudent: Student = {
         ...student,
         paidMonths: updatedPaidMonths,
@@ -183,7 +173,6 @@ export function Notifications() {
 
       await studentsService.update(student.id, updatedStudent);
 
-      // Record payment transaction
       if (notif.classPrice > 0) {
         try {
           await paymentsService.create({
@@ -202,11 +191,19 @@ export function Notifications() {
       }
 
       setStudents(prev => prev.map(s => s.id === student.id ? updatedStudent : s));
-      setSuccessToast(`Paiement du Mois ${notif.month} pour ${notif.studentName} enregistré avec succès !`);
+      setSuccessToast(tr(
+        `تم تسجيل دفع الشهر ${notif.month} للتلميذ ${notif.studentName} بنجاح!`,
+        `Paiement du Mois ${notif.month} pour ${notif.studentName} enregistré avec succès !`,
+        `Payment for Month ${notif.month} for ${notif.studentName} recorded successfully!`
+      ));
       setTimeout(() => setSuccessToast(null), 4000);
     } catch (err: any) {
       console.error('Error recording payment:', err);
-      alert('Erreur lors de l\'enregistrement du paiement : ' + (err?.message || 'Erreur réseau'));
+      alert(tr(
+        'خطأ أثناء تسجيل الدفع: ',
+        "Erreur lors de l'enregistrement du paiement : ",
+        'Error recording payment: '
+      ) + (err?.message || tr('خطأ في الشبكة', 'Erreur réseau', 'Network error')));
     } finally {
       setProcessingId(null);
     }
@@ -244,7 +241,7 @@ export function Notifications() {
       <div className="h-[65vh] flex flex-col items-center justify-center gap-3">
         <Loader2 className="w-10 h-10 text-primary animate-spin" />
         <p className="text-slate-400 font-black uppercase tracking-widest text-xs">
-          {isRTL ? "Vérification des séances & paiements..." : "Loading notifications..."}
+          {tr('جاري التحقق من الحصص والمدفوعات...', 'Vérification des séances & paiements...', 'Checking sessions & payments...')}
         </p>
       </div>
     );
@@ -263,17 +260,19 @@ export function Notifications() {
       {/* Header */}
       <header className={cn("flex flex-col md:flex-row justify-between items-start md:items-end gap-4", isRTL && "md:flex-row-reverse")}>
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-700 rounded-xl text-xs font-black uppercase tracking-wider mb-2">
+          <div className={cn("inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-700 rounded-xl text-xs font-black uppercase tracking-wider mb-2", isRTL && "flex-row-reverse")}>
             <Bell size={14} className="animate-pulse text-amber-600" />
-            <span>{isRTL ? "Suivi Assiduité & Recouvrement" : "Session & Payment Tracker"}</span>
+            <span>{tr('متابعة الحضور والتحصيل', 'Suivi Assiduité & Recouvrement', 'Session & Payment Tracker')}</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-black text-primary tracking-tight">
-            {isRTL ? "Alertes de Renouvellement" : "Payment & Session Alerts"}
+            {tr('تنبيهات تجديد الاشتراك', 'Alertes de Renouvellement', 'Payment & Session Alerts')}
           </h1>
           <p className="text-slate-500 mt-1 text-sm font-medium">
-            {isRTL 
-              ? "Élèves ayant atteint 3 ou 4 séances (présent/absent) en attente de paiement"
-              : "Students with 3 or 4 completed sessions (present/absent) awaiting month renewal"}
+            {tr(
+              'التلاميذ الذين أكملوا 3 أو 4 حصص (حضور/غياب) في انتظار تسديد الاشتراك الشهري',
+              'Élèves ayant atteint 3 ou 4 séances (présent/absent) en attente de paiement',
+              'Students with 3 or 4 completed sessions (present/absent) awaiting month renewal'
+            )}
           </p>
         </div>
 
@@ -282,43 +281,47 @@ export function Notifications() {
             onClick={() => loadData(true)}
             disabled={refreshing}
             className="p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-bold text-xs transition-all flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
-            title="Actualiser les données"
+            title={tr('تحديث البيانات', 'Actualiser les données', 'Refresh data')}
           >
             <RefreshCw size={16} className={cn(refreshing && "animate-spin")} />
-            <span className="hidden sm:inline">Actualiser</span>
+            <span className="hidden sm:inline">{tr('تحديث', 'Actualiser', 'Refresh')}</span>
           </button>
           <button 
             onClick={handleMarkAllRead}
             disabled={notifications.length === 0}
             className="px-4 py-3 bg-white border border-slate-200 hover:border-slate-300 text-primary font-black text-xs rounded-2xl transition-all shadow-xs active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            {isRTL ? "Tout marquer comme vu" : "Mark all as read"}
+            {tr('تحديد الكل كمقروء', 'Tout marquer comme vu', 'Mark all as read')}
           </button>
         </div>
       </header>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Total to recover */}
         <div className="bg-gradient-to-br from-primary to-[#09214D] text-white p-6 rounded-3xl shadow-lg relative overflow-hidden">
           <div className="relative z-10">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] font-black uppercase tracking-widest text-blue-200/80">Total en attente</span>
+            <div className={cn("flex items-center justify-between mb-3", isRTL && "flex-row-reverse")}>
+              <span className="text-[10px] font-black uppercase tracking-widest text-blue-200/80">
+                {tr('الإجمالي المنتظر', 'Total en attente', 'Total Pending')}
+              </span>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-white/10 text-amber-300">
-                {notifications.length} élève(s)
+                {notifications.length} {tr('تلميذ', 'élève(s)', 'student(s)')}
               </span>
             </div>
             <h3 className="text-2xl md:text-3xl font-black text-amber-400 tracking-tight">
               {totalDueAmount.toLocaleString()} {t('currency')}
             </h3>
-            <p className="text-xs text-blue-200/70 mt-1 font-medium">Revenus à recouvrer</p>
+            <p className="text-xs text-blue-200/70 mt-1 font-medium">
+              {tr('مستحقات قيد التحصيل', 'Revenus à recouvrer', 'Revenue to collect')}
+            </p>
           </div>
         </div>
 
-        {/* 4/4 Sessions - Terminé / Paiement Requis */}
         <div className="bg-rose-50 border-2 border-rose-100/80 p-6 rounded-3xl relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-black uppercase tracking-widest text-rose-600/70">4/4 Séances faites</span>
+          <div className={cn("flex items-center justify-between mb-3", isRTL && "flex-row-reverse")}>
+            <span className="text-[10px] font-black uppercase tracking-widest text-rose-600/70">
+              {tr('4/4 حصص مكتملة', '4/4 Séances faites', '4/4 Sessions done')}
+            </span>
             <span className="p-2 bg-rose-500 text-white rounded-xl">
               <AlertOctagon size={16} />
             </span>
@@ -326,13 +329,16 @@ export function Notifications() {
           <h3 className="text-2xl md:text-3xl font-black text-rose-700 tracking-tight">
             {criticalCount}
           </h3>
-          <p className="text-xs text-rose-600/80 mt-1 font-bold">Mois complété • Paiement immédiat</p>
+          <p className="text-xs text-rose-600/80 mt-1 font-bold">
+            {tr('الشهر مكتمل • دفع فوري مطلوب', 'Mois complété • Paiement immédiat', 'Month completed • Immediate payment')}
+          </p>
         </div>
 
-        {/* 3/4 Sessions - Renouvellement Imminent */}
         <div className="bg-amber-50 border-2 border-amber-100/80 p-6 rounded-3xl relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-black uppercase tracking-widest text-amber-600/70">3/4 Séances faites</span>
+          <div className={cn("flex items-center justify-between mb-3", isRTL && "flex-row-reverse")}>
+            <span className="text-[10px] font-black uppercase tracking-widest text-amber-600/70">
+              {tr('3/4 حصص مكتملة', '3/4 Séances faites', '3/4 Sessions done')}
+            </span>
             <span className="p-2 bg-amber-500 text-white rounded-xl">
               <Clock size={16} />
             </span>
@@ -340,13 +346,14 @@ export function Notifications() {
           <h3 className="text-2xl md:text-3xl font-black text-amber-700 tracking-tight">
             {warningCount}
           </h3>
-          <p className="text-xs text-amber-600/80 mt-1 font-bold">1 séance restante • Rappel anticipé</p>
+          <p className="text-xs text-amber-600/80 mt-1 font-bold">
+            {tr('حصة واحدة متبقية • تذكير مسبق', '1 séance restante • Rappel anticipé', '1 session left • Early reminder')}
+          </p>
         </div>
       </div>
 
       {/* Filters & Search */}
       <div className={cn("flex flex-col md:flex-row items-center justify-between gap-4 bg-white p-4 rounded-3xl border border-slate-100 shadow-xs", isRTL && "md:flex-row-reverse")}>
-        {/* Filter Pills */}
         <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
           <button
             onClick={() => setFilterType('all')}
@@ -357,7 +364,7 @@ export function Notifications() {
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             )}
           >
-            Tous ({notifications.length})
+            {tr('الكل', 'Tous', 'All')} ({notifications.length})
           </button>
           <button
             onClick={() => setFilterType('critical')}
@@ -369,7 +376,7 @@ export function Notifications() {
             )}
           >
             <AlertOctagon size={14} />
-            <span>4/4 Séances ({criticalCount})</span>
+            <span>{tr('4/4 حصص', '4/4 Séances', '4/4 Sessions')} ({criticalCount})</span>
           </button>
           <button
             onClick={() => setFilterType('warning')}
@@ -381,18 +388,17 @@ export function Notifications() {
             )}
           >
             <Clock size={14} />
-            <span>3/4 Séances ({warningCount})</span>
+            <span>{tr('3/4 حصص', '3/4 Séances', '3/4 Sessions')} ({warningCount})</span>
           </button>
         </div>
 
-        {/* Search Input */}
         <div className="relative w-full md:w-80">
           <Search className={cn("absolute top-1/2 -translate-y-1/2 text-slate-400", isRTL ? "right-3.5" : "left-3.5")} size={18} />
           <input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher par élève, classe ou téléphone..."
+            placeholder={tr('البحث بالتلميذ أو القسم أو الهاتف...', 'Rechercher par élève, classe ou téléphone...', 'Search by student, class or phone...')}
             className={cn(
               "w-full py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-primary/10 transition-all placeholder:text-slate-400",
               isRTL ? "pr-10 pl-4 text-right" : "pl-10 pr-4"
@@ -410,12 +416,22 @@ export function Notifications() {
             </div>
             <div>
               <h3 className="text-lg font-black text-slate-800">
-                {notifications.length === 0 ? "Tout est en règle !" : "Aucun résultat trouvé"}
+                {notifications.length === 0
+                  ? tr('كل شيء على ما يرام!', 'Tout est en règle !', 'All caught up!')
+                  : tr('لا توجد نتائج مطابقة', 'Aucun résultat trouvé', 'No results found')}
               </h3>
               <p className="text-slate-400 font-medium text-xs mt-1 max-w-md">
                 {notifications.length === 0 
-                  ? "Tous les élèves ayant complété 3 ou 4 séances sont à jour avec leurs paiements pour ce mois."
-                  : "Aucune alerte ne correspond à vos critères de recherche."}
+                  ? tr(
+                      'جميع التلاميذ الذين أكملوا 3 أو 4 حصص قاموا بتسديد مستحقاتهم لهذا الشهر.',
+                      'Tous les élèves ayant complété 3 ou 4 séances sont à jour avec leurs paiements pour ce mois.',
+                      'All students with 3 or 4 completed sessions are up to date on payments.'
+                    )
+                  : tr(
+                      'لا توجد تنبيهات تطابق معايير البحث.',
+                      'Aucune alerte ne correspond à vos critères de recherche.',
+                      'No alerts match your search criteria.'
+                    )}
               </p>
             </div>
           </div>
@@ -423,6 +439,11 @@ export function Notifications() {
           filteredNotifications.map((notif) => {
             const isCritical = notif.urgency === 'critical';
             const isProcessing = processingId === notif.id;
+            const whatsappText = language === 'ar'
+              ? `السلام عليكم، نعلمكم أن التلميذ ${notif.studentName} قد أكمل حصصه للشهر ${notif.month} في قسم ${notif.className}. يرجى تسديد رسوم التجديد (${notif.classPrice} د.ج). أكاديمية سامي.`
+              : language === 'fr'
+              ? `Bonjour, nous vous informons que ${notif.studentName} a complété ses séances pour le mois ${notif.month} dans la classe ${notif.className}. Merci de régler le renouvellement (${notif.classPrice} DA). Samy Academy.`
+              : `Hello, we inform you that ${notif.studentName} has completed sessions for month ${notif.month} in class ${notif.className}. Please settle the renewal (${notif.classPrice} DA). Samy Academy.`;
 
             return (
               <div 
@@ -434,9 +455,7 @@ export function Notifications() {
                   isRTL && "md:flex-row-reverse"
                 )}
               >
-                {/* Left block: Icon + Info */}
                 <div className={cn("flex items-start gap-4 flex-1 min-w-0", isRTL && "flex-row-reverse text-right")}>
-                  {/* Icon Indicator */}
                   <div className={cn(
                     "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-xs",
                     isCritical ? "bg-rose-500 text-white" : "bg-amber-500 text-white"
@@ -445,17 +464,18 @@ export function Notifications() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    {/* Header line: Badges */}
                     <div className={cn("flex flex-wrap items-center gap-2 mb-1.5", isRTL && "flex-row-reverse")}>
                       <span className={cn(
                         "px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider",
                         isCritical ? "bg-rose-100 text-rose-800 border border-rose-200" : "bg-amber-100 text-amber-800 border border-amber-200"
                       )}>
-                        {isCritical ? "4/4 Séances • Impayé" : "3/4 Séances • Renouvellement"}
+                        {isCritical
+                          ? tr('4/4 حصص • غير مدفوع', '4/4 Séances • Impayé', '4/4 Sessions • Unpaid')
+                          : tr('3/4 حصص • تجديد قريب', '3/4 Séances • Renouvellement', '3/4 Sessions • Renewal')}
                       </span>
 
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-700 border border-slate-200">
-                        Mois {notif.month}
+                        {tr(`الشهر ${notif.month}`, `Mois ${notif.month}`, `Month ${notif.month}`)}
                       </span>
 
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-primary/10 text-primary border border-primary/20">
@@ -469,14 +489,14 @@ export function Notifications() {
                       )}
                     </div>
 
-                    {/* Student Name */}
                     <h3 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2 truncate">
                       <span>{notif.studentName}</span>
                     </h3>
 
-                    {/* Attendance breakdown pills */}
-                    <div className={cn("flex items-center gap-2 mt-2 text-xs font-bold text-slate-600", isRTL && "flex-row-reverse")}>
-                      <span className="text-[11px] text-slate-400 uppercase font-black tracking-wider">Séances faites:</span>
+                    <div className={cn("flex items-center gap-2 mt-2 text-xs font-bold text-slate-600 flex-wrap", isRTL && "flex-row-reverse")}>
+                      <span className="text-[11px] text-slate-400 uppercase font-black tracking-wider">
+                        {tr('الحصص المنجزة:', 'Séances faites:', 'Completed sessions:')}
+                      </span>
                       <div className="flex items-center gap-1.5">
                         {notif.sessions.slice(0, 4).map((s, idx) => {
                           const isDone = s === true || s === 'present';
@@ -490,7 +510,7 @@ export function Notifications() {
                                 isAbs ? "bg-rose-500 text-white border-rose-600" :
                                 "bg-slate-100 text-slate-400 border-slate-200"
                               )}
-                              title={`Séance ${idx + 1}: ${isDone ? 'Présent' : isAbs ? 'Absent' : 'Non effectuée'}`}
+                              title={`${tr('الحصة', 'Séance', 'Session')} ${idx + 1}: ${isDone ? tr('حاضر', 'Présent', 'Present') : isAbs ? tr('غائب', 'Absent', 'Absent') : tr('غير مسجلة', 'Non effectuée', 'Not done')}`}
                             >
                               {isDone ? "✓" : isAbs ? "✕" : `S${idx + 1}`}
                             </span>
@@ -498,54 +518,47 @@ export function Notifications() {
                         })}
                       </div>
                       <span className="text-slate-400 text-[11px] font-semibold">
-                        ({notif.presentCount} présent{notif.presentCount > 1 ? 's' : ''}, {notif.absentCount} absent{notif.absentCount > 1 ? 's' : ''})
+                        ({notif.presentCount} {tr('حضور', 'présent', 'present')}, {notif.absentCount} {tr('غياب', 'absent', 'absent')})
                       </span>
                     </div>
 
-                    {/* Phone details */}
                     <div className={cn("flex flex-wrap items-center gap-3 mt-2 text-xs font-semibold text-slate-500", isRTL && "flex-row-reverse")}>
                       <span className="flex items-center gap-1 text-slate-700 font-bold">
                         📞 {notif.parentPhone}
                       </span>
                       {notif.secondaryPhone && (
-                        <span>📱 Tél 2: {notif.secondaryPhone}</span>
+                        <span>📱 {tr('هاتف 2:', 'Tél 2:', 'Phone 2:')} {notif.secondaryPhone}</span>
                       )}
                       <span className="text-primary font-black">
-                        Montant: {notif.classPrice} {t('currency')}
+                        {tr('المبلغ:', 'Montant:', 'Amount:')} {notif.classPrice} {t('currency')}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Right block: Action buttons */}
                 <div className={cn("flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100", isRTL && "flex-row-reverse")}>
-                  {/* Phone Call */}
                   {notif.parentPhone && (
                     <a
                       href={`tel:${notif.parentPhone}`}
                       className="p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl transition-all font-bold text-xs flex items-center justify-center gap-1.5"
-                      title="Appeler le parent"
+                      title={tr('الاتصال بالولي', 'Appeler le parent', 'Call parent')}
                     >
                       <Phone size={16} />
                     </a>
                   )}
 
-                  {/* WhatsApp Quick Message */}
                   {notif.parentPhone && (
                     <a
-                      href={`https://wa.me/${notif.parentPhone.replace(/\D/g, '')}?text=${encodeURIComponent(
-                        `Bonjour, nous vous informons que ${notif.studentName} a complété ses séances pour le mois ${notif.month} dans la classe ${notif.className}. Merci de régler le renouvellement (${notif.classPrice} DA). Samy Academy.`
-                      )}`}
+                      href={`https://wa.me/${notif.parentPhone.replace(/\D/g, '')}?text=${encodeURIComponent(whatsappText)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-2xl transition-all font-bold text-xs flex items-center justify-center gap-1.5"
-                      title="Envoyer un rappel WhatsApp"
+                      title={tr('إرسال تذكير واتساب', 'Envoyer un rappel WhatsApp', 'Send WhatsApp reminder')}
                     >
                       <MessageCircle size={16} />
                     </a>
                   )}
 
-                  {/* Mark as Paid Direct Button */}
                   <button
                     type="button"
                     onClick={() => handleMarkAsPaid(notif)}
@@ -557,10 +570,9 @@ export function Notifications() {
                     ) : (
                       <Check size={16} className="stroke-[3]" />
                     )}
-                    <span>Encaisser {notif.classPrice} DA</span>
+                    <span>{tr('تحصيل', 'Encaisser', 'Collect')} {notif.classPrice} {t('currency')}</span>
                   </button>
 
-                  {/* Go to Class */}
                   <button
                     type="button"
                     onClick={() => {
@@ -568,7 +580,7 @@ export function Notifications() {
                       navigate('/classes');
                     }}
                     className="p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl transition-all font-bold text-xs flex items-center justify-center"
-                    title="Voir la classe"
+                    title={tr('عرض القسم', 'Voir la classe', 'View class')}
                   >
                     <ArrowRight size={16} className={cn(isRTL && "rotate-180")} />
                   </button>

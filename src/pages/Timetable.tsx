@@ -32,18 +32,38 @@ import { useLanguage } from '../context/LanguageContext';
 import { cn } from '../lib/utils';
 
 const COLOR_PALETTES = [
-  { name: 'Bleu Royal', value: '#2563eb', bg: 'bg-blue-50', border: 'border-blue-300', text: 'text-blue-700' },
-  { name: 'Émeraude', value: '#059669', bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-700' },
-  { name: 'Violet', value: '#7c3aed', bg: 'bg-purple-50', border: 'border-purple-300', text: 'text-purple-700' },
-  { name: 'Ambre / Or', value: '#d97706', bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-700' },
-  { name: 'Rose Fushia', value: '#db2777', bg: 'bg-pink-50', border: 'border-pink-300', text: 'text-pink-700' },
-  { name: 'Cyan Ciel', value: '#0891b2', bg: 'bg-cyan-50', border: 'border-cyan-300', text: 'text-cyan-700' },
-  { name: 'Indigo Nuit', value: '#4f46e5', bg: 'bg-indigo-50', border: 'border-indigo-300', text: 'text-indigo-700' },
-  { name: 'Rouge Corail', value: '#dc2626', bg: 'bg-rose-50', border: 'border-rose-300', text: 'text-rose-700' }
+  { ar: 'أزرق ملكي', fr: 'Bleu Royal', en: 'Royal Blue', value: '#2563eb' },
+  { ar: 'زمردي', fr: 'Émeraude', en: 'Emerald', value: '#059669' },
+  { ar: 'بنفسجي', fr: 'Violet', en: 'Purple', value: '#7c3aed' },
+  { ar: 'ذهبي / عنبري', fr: 'Ambre / Or', en: 'Amber / Gold', value: '#d97706' },
+  { ar: 'وردي', fr: 'Rose Fushia', en: 'Pink', value: '#db2777' },
+  { ar: 'سماوي', fr: 'Cyan Ciel', en: 'Cyan', value: '#0891b2' },
+  { ar: 'نيلي', fr: 'Indigo Nuit', en: 'Indigo', value: '#4f46e5' },
+  { ar: 'أحمر مرجاني', fr: 'Rouge Corail', en: 'Coral Red', value: '#dc2626' }
 ];
 
+const DAY_LABELS: Record<string, { ar: string; fr: string; en: string }> = {
+  dimanche: { ar: 'الأحد', fr: 'Dimanche', en: 'Sunday' },
+  lundi: { ar: 'الإثنين', fr: 'Lundi', en: 'Monday' },
+  mardi: { ar: 'الثلاثاء', fr: 'Mardi', en: 'Tuesday' },
+  mercredi: { ar: 'الأربعاء', fr: 'Mercredi', en: 'Wednesday' },
+  jeudi: { ar: 'الخميس', fr: 'Jeudi', en: 'Thursday' },
+  vendredi: { ar: 'الجمعة', fr: 'Vendredi', en: 'Friday' },
+  samedi: { ar: 'السبت', fr: 'Samedi', en: 'Saturday' },
+};
+
 export function Timetable() {
-  const { t, isRTL } = useLanguage();
+  const { tr, isRTL, language } = useLanguage();
+  const dateLocale = language === 'ar' ? 'ar-DZ' : language === 'fr' ? 'fr-FR' : 'en-GB';
+  const formatDay = (day: string) => {
+    const entry = DAY_LABELS[day.trim().toLowerCase()];
+    return entry ? entry[language] : day;
+  };
+  const formatRoom = (room: string) => {
+    const match = room.trim().match(/^Salle\s+(.+)$/i);
+    if (!match) return room;
+    return tr(`قاعة ${match[1]}`, `Salle ${match[1]}`, `Room ${match[1]}`);
+  };
   const [config, setConfig] = useState<TimetableConfig | null>(null);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -220,7 +240,7 @@ ON CONFLICT (id) DO NOTHING;`;
             const createdTeacher = await teachersService.create({
               name: finalTeacherName,
               email: '',
-              subject: cellForm.subject?.trim() || 'Général',
+              subject: cellForm.subject?.trim() || tr('عام', 'Général', 'General'),
               salary: 0,
               paymentStatus: 'Unpaid',
               paidMonths: []
@@ -285,7 +305,7 @@ ON CONFLICT (id) DO NOTHING;`;
 
   const handleRemoveTimeSlot = async (timeSlot: string) => {
     if (!config) return;
-    if (window.confirm(`Voulez-vous vraiment supprimer le créneau "${timeSlot}" et toutes ses séances associées ?`)) {
+    if (window.confirm(tr(`هل تريد حقاً حذف الفترة الزمنية "${timeSlot}" وكل الحصص المرتبطة بها؟`, `Voulez-vous vraiment supprimer le créneau "${timeSlot}" et toutes ses séances associées ?`, `Do you really want to delete the time slot "${timeSlot}" and all its sessions?`))) {
       try {
         const updated = await timetableService.removeTimeSlot(timeSlot);
         setConfig(updated);
@@ -310,7 +330,7 @@ ON CONFLICT (id) DO NOTHING;`;
 
   const handleRemoveRoom = async (room: string) => {
     if (!config) return;
-    if (window.confirm(`Voulez-vous vraiment supprimer la salle "${room}" ?`)) {
+    if (window.confirm(tr(`هل تريد حقاً حذف "${formatRoom(room)}"؟`, `Voulez-vous vraiment supprimer la salle "${room}" ?`, `Do you really want to delete "${formatRoom(room)}"?`))) {
       try {
         const updated = await timetableService.removeRoom(room);
         setConfig(updated);
@@ -324,7 +344,7 @@ ON CONFLICT (id) DO NOTHING;`;
   };
 
   const handleResetToDefault = async () => {
-    if (window.confirm('Voulez-vous réinitialiser l\'emploi du temps avec la structure d\'exemple ?')) {
+    if (window.confirm(tr('هل تريد إعادة ضبط جدول التوقيت إلى الهيكل الافتراضي؟', 'Voulez-vous réinitialiser l\'emploi du temps avec la structure d\'exemple ?', 'Do you want to reset the timetable to the default structure?'))) {
       try {
         const updated = await timetableService.resetToDefault();
         setConfig(updated);
@@ -403,7 +423,7 @@ ON CONFLICT (id) DO NOTHING;`;
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-sm font-bold text-slate-500">Chargement de l'emploi du temps...</p>
+          <p className="text-sm font-bold text-slate-500">{tr('جاري تحميل جدول التوقيت...', 'Chargement de l\'emploi du temps...', 'Loading timetable...')}</p>
         </div>
       </div>
     );
@@ -424,13 +444,13 @@ ON CONFLICT (id) DO NOTHING;`;
               </div>
               <div>
                 <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-                  Emploi du Temps Hebdomadaire
+                  {tr('جدول التوقيت الأسبوعي', 'Emploi du Temps Hebdomadaire', 'Weekly Timetable')}
                   <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-bold">
-                    {totalSessionsCount} Séances
+                    {totalSessionsCount} {tr('حصص', 'Séances', 'Sessions')}
                   </span>
                 </h1>
                 <p className="text-xs font-semibold text-slate-500">
-                  Grille interactive type Excel — Cliquez sur n'importe quelle case pour ajouter, modifier ou déplacer une séance.
+                  {tr('جدول تفاعلي — انقر على أي خانة لإضافة أو تعديل أو مسح حصة.', 'Grille interactive type Excel — Cliquez sur n\'importe quelle case pour ajouter, modifier ou déplacer une séance.', 'Interactive grid — Click any cell to add, edit, or clear a session.')}
                 </p>
               </div>
             </div>
@@ -440,7 +460,7 @@ ON CONFLICT (id) DO NOTHING;`;
             <button
               onClick={() => setIsSqlModalOpen(true)}
               className="px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-black text-xs rounded-2xl transition-all flex items-center gap-2 border border-emerald-200 shadow-2xs cursor-pointer active:scale-95"
-              title="Voir le code SQL Supabase"
+              title={tr('عرض كود SQL Supabase', 'Voir le code SQL Supabase', 'View Supabase SQL code')}
             >
               <Database size={15} className="text-emerald-600" />
               <span>SQL Supabase</span>
@@ -451,7 +471,7 @@ ON CONFLICT (id) DO NOTHING;`;
               className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs rounded-2xl transition-all flex items-center gap-2 border border-slate-200 shadow-xs"
             >
               <Clock size={15} />
-              <span>+ Créneau</span>
+              <span>{tr('+ توقيت', '+ Créneau', '+ Time Slot')}</span>
             </button>
 
             <button
@@ -459,7 +479,7 @@ ON CONFLICT (id) DO NOTHING;`;
               className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs rounded-2xl transition-all flex items-center gap-2 border border-slate-200 shadow-xs"
             >
               <MapPin size={15} />
-              <span>+ Salle</span>
+              <span>{tr('+ قاعة', '+ Salle', '+ Room')}</span>
             </button>
 
             <button
@@ -467,12 +487,12 @@ ON CONFLICT (id) DO NOTHING;`;
               className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-2xl transition-all flex items-center gap-2 shadow-sm"
             >
               <Printer size={15} />
-              <span>Imprimer A4</span>
+              <span>{tr('طباعة A4', 'Imprimer A4', 'Print A4')}</span>
             </button>
 
             <button
               onClick={handleResetToDefault}
-              title="Réinitialiser"
+              title={tr('إعادة ضبط', 'Réinitialiser', 'Reset')}
               className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-2xl transition-all border border-slate-200"
             >
               <RotateCcw size={16} />
@@ -483,13 +503,16 @@ ON CONFLICT (id) DO NOTHING;`;
         {/* Filters and Search Strip */}
         <div className="mt-6 pt-5 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <Search className={cn("absolute top-1/2 -translate-y-1/2 text-slate-400", isRTL ? "right-3.5" : "left-3.5")} size={16} />
             <input
               type="text"
-              placeholder="Rechercher matière, prof, classe..."
+              placeholder={tr('البحث عن مادة، أستاذ، قسم...', 'Rechercher matière, prof, classe...', 'Search subject, teacher, class...')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-primary focus:bg-white transition-all"
+              className={cn(
+                "w-full py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-primary focus:bg-white transition-all",
+                isRTL ? "pr-10 pl-4 text-right" : "pl-10 pr-4"
+              )}
             />
           </div>
 
@@ -499,7 +522,7 @@ ON CONFLICT (id) DO NOTHING;`;
               onChange={(e) => setFilterClassId(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-primary focus:bg-white transition-all"
             >
-              <option value="all">Toutes les classes</option>
+              <option value="all">{tr('كل الأقسام', 'Toutes les classes', 'All Classes')}</option>
               {classes.map(c => (
                 <option key={c.id} value={c.name}>{c.name}</option>
               ))}
@@ -512,7 +535,7 @@ ON CONFLICT (id) DO NOTHING;`;
               onChange={(e) => setFilterTeacherName(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-primary focus:bg-white transition-all"
             >
-              <option value="all">Tous les professeurs</option>
+              <option value="all">{tr('كل الأساتذة', 'Tous les professeurs', 'All Teachers')}</option>
               {teachers.map(t => (
                 <option key={t.id} value={t.name}>{t.name}</option>
               ))}
@@ -525,9 +548,9 @@ ON CONFLICT (id) DO NOTHING;`;
               onChange={(e) => setFilterRoom(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-primary focus:bg-white transition-all"
             >
-              <option value="all">Toutes les salles</option>
+              <option value="all">{tr('كل القاعات', 'Toutes les salles', 'All Rooms')}</option>
               {config.rooms.map(r => (
-                <option key={r} value={r}>{r}</option>
+                <option key={r} value={r}>{formatRoom(r)}</option>
               ))}
             </select>
           </div>
@@ -541,13 +564,13 @@ ON CONFLICT (id) DO NOTHING;`;
           <div className="flex items-center gap-4">
             <img src="/logo.png" alt="Samy Academy Logo" className="h-16 w-auto object-contain" />
             <div>
-              <h1 className="text-xl font-black uppercase tracking-wider text-slate-900">Emploi du Temps Hebdomadaire</h1>
-              <p className="text-xs font-semibold text-slate-500">Samy Academy — Année Académique 2025 / 2026</p>
+              <h1 className="text-xl font-black uppercase tracking-wider text-slate-900">{tr('جدول التوقيت الأسبوعي', 'Emploi du Temps Hebdomadaire', 'Weekly Timetable')}</h1>
+              <p className="text-xs font-semibold text-slate-500">{tr('أكاديمية سامي — السنة الدراسية 2025 / 2026', 'Samy Academy — Année Académique 2025 / 2026', 'Samy Academy — Academic Year 2025 / 2026')}</p>
             </div>
           </div>
-          <div className="text-right text-xs font-bold text-slate-600">
-            <p>Édition du: {new Date().toLocaleDateString('fr-FR')}</p>
-            <p className="text-[11px] text-slate-400">Planning officiel des cours & séances</p>
+          <div className={cn("text-xs font-bold text-slate-600", isRTL ? "text-left" : "text-right")}>
+            <p>{tr('تاريخ الإصدار:', 'Édition du:', 'Issued on:')} {new Date().toLocaleDateString(dateLocale)}</p>
+            <p className="text-[11px] text-slate-400">{tr('الجدول الرسمي للدروس والحصص', 'Planning officiel des cours & séances', 'Official courses & sessions schedule')}</p>
           </div>
         </div>
 
@@ -557,10 +580,10 @@ ON CONFLICT (id) DO NOTHING;`;
             <thead>
               <tr className="bg-primary text-white divide-x divide-white/10 border-b border-primary">
                 {/* Time slot column title */}
-                <th className="p-3.5 text-center text-xs font-black uppercase tracking-wider w-36 bg-[#09214D] sticky left-0 z-20">
+                <th className={cn("p-3.5 text-center text-xs font-black uppercase tracking-wider w-36 bg-[#09214D] sticky z-20", isRTL ? "right-0" : "left-0")}>
                   <div className="flex items-center justify-center gap-1.5 text-amber-300">
                     <Clock size={14} />
-                    <span>Créneaux</span>
+                    <span>{tr('التوقيت', 'Créneaux', 'Time Slots')}</span>
                   </div>
                 </th>
 
@@ -569,7 +592,7 @@ ON CONFLICT (id) DO NOTHING;`;
                   <th key={day} className="p-3.5 text-center text-xs font-black uppercase tracking-wider min-w-[150px]">
                     <div className="flex items-center justify-center gap-1.5">
                       <Calendar size={13} className="text-accent" />
-                      <span>{day}</span>
+                      <span>{formatDay(day)}</span>
                     </div>
                   </th>
                 ))}
@@ -578,18 +601,18 @@ ON CONFLICT (id) DO NOTHING;`;
 
             {/* Table Body: Interactive Cells */}
             <tbody className="divide-y divide-slate-200">
-              {config.timeSlots.map((timeSlot, tsIdx) => (
+              {config.timeSlots.map((timeSlot) => (
                 <tr key={timeSlot} className="hover:bg-slate-50/50 transition-colors divide-x divide-slate-200 group/row">
-                  {/* Left Column: Time Slot Pill with delete button */}
-                  <td className="p-3 bg-slate-50 font-mono text-xs font-black text-slate-700 text-center sticky left-0 z-10 border-r border-slate-300 shadow-xs">
+                  {/* Sticky Time Slot Pill with delete button */}
+                  <td className={cn("p-3 bg-slate-50 font-mono text-xs font-black text-slate-700 text-center sticky z-10 border-slate-300 shadow-xs", isRTL ? "right-0 border-l" : "left-0 border-r")}>
                     <div className="flex flex-col items-center justify-center gap-1 group/ts relative">
-                      <span className="bg-white px-2.5 py-1 rounded-xl border border-slate-200 shadow-2xs">
+                      <span dir="ltr" className="bg-white px-2.5 py-1 rounded-xl border border-slate-200 shadow-2xs">
                         {timeSlot}
                       </span>
                       {config.timeSlots.length > 2 && (
                         <button
                           onClick={() => handleRemoveTimeSlot(timeSlot)}
-                          title="Supprimer ce créneau"
+                          title={tr('حذف هذا التوقيت', 'Supprimer ce créneau', 'Delete this time slot')}
                           className="opacity-0 group-hover/ts:opacity-100 transition-opacity text-rose-500 hover:text-rose-700 text-[10px] flex items-center gap-1 pt-0.5 print:hidden"
                         >
                           <Trash2 size={11} />
@@ -622,8 +645,11 @@ ON CONFLICT (id) DO NOTHING;`;
                       >
                         {hasContent ? (
                           <div 
-                            style={{ borderLeftColor: cell.color || '#2563eb' }}
-                            className="h-full w-full rounded-xl bg-white border border-slate-200/80 border-l-4 p-2.5 flex flex-col justify-between shadow-2xs hover:shadow-md transition-all group/card relative"
+                            style={{ [isRTL ? 'borderRightColor' : 'borderLeftColor']: cell.color || '#2563eb' }}
+                            className={cn(
+                              "h-full w-full rounded-xl bg-white border border-slate-200/80 p-2.5 flex flex-col justify-between shadow-2xs hover:shadow-md transition-all group/card relative",
+                              isRTL ? "border-r-4" : "border-l-4"
+                            )}
                           >
                             <div>
                               {/* Top Bar: Subject & Room */}
@@ -633,7 +659,7 @@ ON CONFLICT (id) DO NOTHING;`;
                                 </span>
                                 {cell.room && (
                                   <span className="text-[9px] font-extrabold px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded-md shrink-0 border border-slate-200">
-                                    {cell.room}
+                                    {formatRoom(cell.room)}
                                   </span>
                                 )}
                               </div>
@@ -662,14 +688,14 @@ ON CONFLICT (id) DO NOTHING;`;
                             )}
 
                             {/* Quick Action Overlay on Hover */}
-                            <div className="absolute top-1 right-1 opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center gap-1 bg-white/90 backdrop-blur-xs p-1 rounded-lg border border-slate-200 print:hidden">
+                            <div className={cn("absolute top-1 opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center gap-1 bg-white/90 backdrop-blur-xs p-1 rounded-lg border border-slate-200 print:hidden", isRTL ? "left-1" : "right-1")}>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleOpenEditModal(day, timeSlot);
                                 }}
                                 className="p-1 hover:bg-slate-100 text-slate-600 rounded"
-                                title="Modifier"
+                                title={tr('تعديل', 'Modifier', 'Edit')}
                               >
                                 <Edit3 size={12} />
                               </button>
@@ -679,7 +705,7 @@ ON CONFLICT (id) DO NOTHING;`;
                                   handleDeleteCell(day, timeSlot);
                                 }}
                                 className="p-1 hover:bg-rose-50 text-rose-600 rounded"
-                                title="Vider la case"
+                                title={tr('مسح الخانة', 'Vider la case', 'Clear cell')}
                               >
                                 <Trash2 size={12} />
                               </button>
@@ -689,7 +715,7 @@ ON CONFLICT (id) DO NOTHING;`;
                           <div className="h-full w-full rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300 hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all p-2 group/empty">
                             <Plus size={16} className="transition-transform group-hover/empty:scale-125" />
                             <span className="text-[10px] font-bold mt-1 opacity-0 group-hover/empty:opacity-100 transition-opacity">
-                              Ajouter
+                              {tr('إضافة', 'Ajouter', 'Add')}
                             </span>
                           </div>
                         )}
@@ -709,21 +735,21 @@ ON CONFLICT (id) DO NOTHING;`;
         <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs">
           <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2 mb-3">
             <MapPin size={16} className="text-primary" />
-            <span>Salles Configurées</span>
+            <span>{tr('القاعات المتوفرة', 'Salles Configurées', 'Configured Rooms')}</span>
           </h3>
           <div className="flex flex-wrap gap-1.5">
             {config.rooms.map(r => {
               const sessionsInRoom = (Object.values(config.cells) as (TimetableCell | undefined)[]).filter(c => c && c.room === r).length;
               return (
                 <span key={r} className="group/rm px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2 transition-colors">
-                  <span>{r}</span>
+                  <span>{formatRoom(r)}</span>
                   <span className="px-1.5 py-0.2 bg-slate-200 text-slate-800 text-[10px] font-black rounded-md">
                     {sessionsInRoom}
                   </span>
                   {config.rooms.length > 1 && (
                     <button
                       onClick={() => handleRemoveRoom(r)}
-                      title={`Supprimer ${r}`}
+                      title={tr(`حذف ${formatRoom(r)}`, `Supprimer ${r}`, `Delete ${formatRoom(r)}`)}
                       className="opacity-0 group-hover/rm:opacity-100 text-slate-400 hover:text-rose-600 transition-opacity p-0.5 rounded"
                     >
                       <Trash2 size={11} />
@@ -739,7 +765,7 @@ ON CONFLICT (id) DO NOTHING;`;
         <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs md:col-span-2">
           <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2 mb-3">
             <BookOpen size={16} className="text-primary" />
-            <span>Classes & Effectifs Hebdomadaires</span>
+            <span>{tr('الأقسام والحجم الساعي الأسبوعي', 'Classes & Effectifs Hebdomadaires', 'Classes & Weekly Schedule')}</span>
           </h3>
           <div className="flex flex-wrap gap-2">
             {classes.map(cl => {
@@ -760,7 +786,7 @@ ON CONFLICT (id) DO NOTHING;`;
                     "px-1.5 py-0.2 text-[10px] font-black rounded-md",
                     filterClassId === cl.name ? "bg-white/20 text-white" : "bg-slate-200 text-slate-800"
                   )}>
-                    {count}h
+                    {count}{tr('ح', 's', 's')}
                   </span>
                 </button>
               );
@@ -781,10 +807,10 @@ ON CONFLICT (id) DO NOTHING;`;
                 </div>
                 <div>
                   <h3 className="text-base font-black">
-                    Séance: {editingCellKey.day}
+                    {tr('الحصة:', 'Séance:', 'Session:')} {formatDay(editingCellKey.day)}
                   </h3>
-                  <p className="text-xs font-mono text-slate-300">
-                    Horaire : {editingCellKey.timeSlot}
+                  <p className="text-xs font-mono text-slate-300" dir="ltr">
+                    {editingCellKey.timeSlot}
                   </p>
                 </div>
               </div>
@@ -802,14 +828,14 @@ ON CONFLICT (id) DO NOTHING;`;
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                   <Sparkles size={13} className="text-accent" />
-                  <span>Remplissage Rapide via Classe Existante</span>
+                  <span>{tr('ملء سريع من قسم موجود', 'Remplissage Rapide via Classe Existante', 'Quick Fill from Existing Class')}</span>
                 </label>
                 <select
                   onChange={(e) => handleSelectPresetClass(e.target.value)}
                   defaultValue=""
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-primary focus:bg-white transition-all"
                 >
-                  <option value="" disabled>-- Choisir une classe pour pré-remplir --</option>
+                  <option value="" disabled>{tr('-- اختر قسماً للملء التلقائي --', '-- Choisir une classe pour pré-remplir --', '-- Choose a class to auto-fill --')}</option>
                   {classes.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
@@ -819,12 +845,12 @@ ON CONFLICT (id) DO NOTHING;`;
               {/* Subject / Course Title */}
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">
-                  Matière ou Titre du cours *
+                  {tr('المادة أو عنوان الدرس *', 'Matière ou Titre du cours *', 'Subject or Course Title *')}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="ex: Mathématiques, Physique, Français..."
+                  placeholder={tr('مثال: الرياضيات، الفيزياء، الفرنسية...', 'ex: Mathématiques, Physique, Français...', 'e.g. Mathematics, Physics, French...')}
                   value={cellForm.subject || ''}
                   onChange={(e) => setCellForm({ ...cellForm, subject: e.target.value })}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-primary focus:bg-white transition-all"
@@ -834,11 +860,11 @@ ON CONFLICT (id) DO NOTHING;`;
               {/* Class / Group Name */}
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">
-                  Classe / Groupe
+                  {tr('القسم / الفوج', 'Classe / Groupe', 'Class / Group')}
                 </label>
                 <input
                   type="text"
-                  placeholder="ex: Terminale Math, 4ème AM Groupe 1..."
+                  placeholder={tr('مثال: نهائي علوم، 4 متوسط فوج 1...', 'ex: Terminale Math, 4ème AM Groupe 1...', 'e.g. Grade 12 Math, Group 1...')}
                   value={cellForm.className || ''}
                   onChange={(e) => setCellForm({ ...cellForm, className: e.target.value })}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-primary focus:bg-white transition-all"
@@ -851,7 +877,7 @@ ON CONFLICT (id) DO NOTHING;`;
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1">
                       <User size={13} className="text-primary" />
-                      <span>Enseignant(e)</span>
+                      <span>{tr('الأستاذ(ة)', 'Enseignant(e)', 'Teacher')}</span>
                     </label>
                     <button
                       type="button"
@@ -863,7 +889,7 @@ ON CONFLICT (id) DO NOTHING;`;
                       }}
                       className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1"
                     >
-                      {isCustomTeacher ? "📋 Choisir dans la liste" : "➕ Nouveau prof"}
+                      {isCustomTeacher ? tr('📋 اختر من القائمة', '📋 Choisir dans la liste', '📋 Choose from list') : tr('➕ أستاذ جديد', '➕ Nouveau prof', '➕ New teacher')}
                     </button>
                   </div>
 
@@ -891,22 +917,22 @@ ON CONFLICT (id) DO NOTHING;`;
                       }}
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-primary focus:bg-white transition-all"
                     >
-                      <option value="">-- Sans enseignant --</option>
-                      <optgroup label="Enseignants Réels Enregistrés">
+                      <option value="">{tr('-- بدون أستاذ --', '-- Sans enseignant --', '-- No teacher --')}</option>
+                      <optgroup label={tr('الأساتذة المسجلون', 'Enseignants Réels Enregistrés', 'Registered Teachers')}>
                         {teachers.map(t => (
                           <option key={t.id} value={t.id}>
                             {t.name} {t.subject ? `(${t.subject})` : ''}
                           </option>
                         ))}
                       </optgroup>
-                      <option value="__custom__">➕ Saisir un nouveau nom...</option>
+                      <option value="__custom__">{tr('➕ إدخال اسم جديد...', '➕ Saisir un nouveau nom...', '➕ Enter new name...')}</option>
                     </select>
                   ) : (
                     <div className="space-y-1.5">
                       <input
                         type="text"
                         autoFocus
-                        placeholder="ex: Prof. Amine Ziani"
+                        placeholder={tr('مثال: أ. أمين زياني', 'ex: Prof. Amine Ziani', 'e.g. Prof. Amine Ziani')}
                         value={cellForm.teacherName || ''}
                         onChange={(e) => setCellForm({ ...cellForm, teacherName: e.target.value, teacherId: undefined })}
                         className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-primary focus:bg-white transition-all"
@@ -919,7 +945,7 @@ ON CONFLICT (id) DO NOTHING;`;
                           className="rounded border-slate-300 text-primary focus:ring-primary h-3.5 w-3.5"
                         />
                         <span className="text-[10px] font-bold text-slate-600">
-                          Ajouter aussi aux Enseignants enregistrés
+                          {tr('إضافته أيضاً إلى قائمة الأساتذة', 'Ajouter aussi aux Enseignants enregistrés', 'Also add to registered Teachers')}
                         </span>
                       </label>
                     </div>
@@ -929,16 +955,16 @@ ON CONFLICT (id) DO NOTHING;`;
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1">
                     <MapPin size={13} className="text-primary" />
-                    <span>Salle de cours</span>
+                    <span>{tr('قاعة الدرس', 'Salle de cours', 'Classroom')}</span>
                   </label>
                   <select
                     value={cellForm.room || ''}
                     onChange={(e) => setCellForm({ ...cellForm, room: e.target.value })}
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-primary focus:bg-white transition-all"
                   >
-                    <option value="">-- Sans salle --</option>
+                    <option value="">{tr('-- بدون قاعة --', '-- Sans salle --', '-- No room --')}</option>
                     {config.rooms.map(r => (
-                      <option key={r} value={r}>{r}</option>
+                      <option key={r} value={r}>{formatRoom(r)}</option>
                     ))}
                   </select>
                 </div>
@@ -947,7 +973,7 @@ ON CONFLICT (id) DO NOTHING;`;
               {/* Color Tag Picker */}
               <div className="space-y-1.5 pt-1">
                 <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">
-                  Couleur d'accentuation (Tag)
+                  {tr('لون التمييز', 'Couleur d\'accentuation (Tag)', 'Accent Color')}
                 </label>
                 <div className="flex flex-wrap gap-2 pt-1">
                   {COLOR_PALETTES.map(p => (
@@ -960,7 +986,7 @@ ON CONFLICT (id) DO NOTHING;`;
                         cellForm.color === p.value ? "scale-110 ring-2 ring-offset-2 ring-slate-900" : "hover:scale-105"
                       )}
                       style={{ backgroundColor: p.value }}
-                      title={p.name}
+                      title={p[language]}
                     >
                       {cellForm.color === p.value && <Check size={14} className="text-white" />}
                     </button>
@@ -971,11 +997,11 @@ ON CONFLICT (id) DO NOTHING;`;
               {/* Note / Remarks */}
               <div className="space-y-1.5 pt-1">
                 <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">
-                  Remarques ou Détails (Optionnel)
+                  {tr('ملاحظات أو تفاصيل (اختياري)', 'Remarques ou Détails (Optionnel)', 'Notes or Details (Optional)')}
                 </label>
                 <input
                   type="text"
-                  placeholder="ex: Série d'exercices, Devoir surveillé, etc."
+                  placeholder={tr('مثال: سلسلة تمارين، فرض محروس...', 'ex: Série d\'exercices, Devoir surveillé, etc.', 'e.g. Exercise sheet, Test, etc.')}
                   value={cellForm.note || ''}
                   onChange={(e) => setCellForm({ ...cellForm, note: e.target.value })}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-primary focus:bg-white transition-all"
@@ -992,7 +1018,7 @@ ON CONFLICT (id) DO NOTHING;`;
                   className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-2xl transition-colors flex items-center gap-1.5"
                 >
                   <Trash2 size={15} />
-                  <span>Effacer la case</span>
+                  <span>{tr('مسح الخانة', 'Effacer la case', 'Clear Cell')}</span>
                 </button>
 
                 <div className="flex items-center gap-2">
@@ -1001,14 +1027,14 @@ ON CONFLICT (id) DO NOTHING;`;
                     onClick={() => setEditingCellKey(null)}
                     className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-2xl transition-colors"
                   >
-                    Annuler
+                    {tr('إلغاء', 'Annuler', 'Cancel')}
                   </button>
                   <button
                     type="submit"
                     className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white font-black text-xs rounded-2xl transition-all shadow-md flex items-center gap-2"
                   >
                     <Save size={15} />
-                    <span>Enregistrer</span>
+                    <span>{tr('حفظ', 'Enregistrer', 'Save')}</span>
                   </button>
                 </div>
               </div>
@@ -1023,10 +1049,10 @@ ON CONFLICT (id) DO NOTHING;`;
           <div className="bg-white rounded-3xl max-w-sm w-full p-6 border border-slate-200 shadow-2xl">
             <h3 className="text-base font-black text-slate-900 mb-1 flex items-center gap-2">
               <Clock size={18} className="text-primary" />
-              <span>Nouveau Créneau Horaire</span>
+              <span>{tr('فترة زمنية جديدة', 'Nouveau Créneau Horaire', 'New Time Slot')}</span>
             </h3>
             <p className="text-xs text-slate-500 font-medium mb-4">
-              Indiquez l'intervalle horaire (ex: 14:00 - 16:00 ou 16:30 - 18:00).
+              {tr('أدخل المجال الزمني (مثال: 14:00 - 16:00).', 'Indiquez l\'intervalle horaire (ex: 14:00 - 16:00 ou 16:30 - 18:00).', 'Enter time range (e.g. 14:00 - 16:00).')}
             </p>
             <form onSubmit={handleAddTimeSlot} className="space-y-4">
               <input
@@ -1044,13 +1070,13 @@ ON CONFLICT (id) DO NOTHING;`;
                   onClick={() => setIsAddTimeSlotModalOpen(false)}
                   className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
                 >
-                  Annuler
+                  {tr('إلغاء', 'Annuler', 'Cancel')}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 bg-primary hover:bg-primary/90 text-white font-black text-xs rounded-xl shadow-xs"
                 >
-                  Ajouter le créneau
+                  {tr('إضافة التوقيت', 'Ajouter le créneau', 'Add Time Slot')}
                 </button>
               </div>
             </form>
@@ -1064,17 +1090,17 @@ ON CONFLICT (id) DO NOTHING;`;
           <div className="bg-white rounded-3xl max-w-sm w-full p-6 border border-slate-200 shadow-2xl">
             <h3 className="text-base font-black text-slate-900 mb-1 flex items-center gap-2">
               <MapPin size={18} className="text-primary" />
-              <span>Ajouter une Salle</span>
+              <span>{tr('إضافة قاعة', 'Ajouter une Salle', 'Add Room')}</span>
             </h3>
             <p className="text-xs text-slate-500 font-medium mb-4">
-              Nom ou numéro de la salle (ex: Salle 5, Salle Informatique, Amphi B).
+              {tr('اسم أو رقم القاعة (مثال: قاعة 5، قاعة الإعلام الآلي).', 'Nom ou numéro de la salle (ex: Salle 5, Salle Informatique, Amphi B).', 'Room name or number (e.g. Room 5, Computer Lab).')}
             </p>
             <form onSubmit={handleAddRoom} className="space-y-4">
               <input
                 type="text"
                 required
                 autoFocus
-                placeholder="ex: Salle 5"
+                placeholder={tr('مثال: قاعة 5', 'ex: Salle 5', 'e.g. Room 5')}
                 value={newRoomInput}
                 onChange={(e) => setNewRoomInput(e.target.value)}
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-primary focus:bg-white"
@@ -1085,13 +1111,13 @@ ON CONFLICT (id) DO NOTHING;`;
                   onClick={() => setIsAddRoomModalOpen(false)}
                   className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
                 >
-                  Annuler
+                  {tr('إلغاء', 'Annuler', 'Cancel')}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 bg-primary hover:bg-primary/90 text-white font-black text-xs rounded-xl shadow-xs"
                 >
-                  Ajouter la salle
+                  {tr('إضافة القاعة', 'Ajouter la salle', 'Add Room')}
                 </button>
               </div>
             </form>
@@ -1110,10 +1136,10 @@ ON CONFLICT (id) DO NOTHING;`;
                 </div>
                 <div>
                   <h3 className="text-base font-black text-slate-900">
-                    Code SQL Supabase — Table Emploi du Temps
+                    {tr('كود SQL Supabase — جدول التوقيت', 'Code SQL Supabase — Table Emploi du Temps', 'Supabase SQL Code — Timetable Table')}
                   </h3>
                   <p className="text-xs text-slate-500 font-medium">
-                    Exécutez ce script dans l'éditeur SQL de votre console Supabase (SQL Editor).
+                    {tr('قم بتشغيل هذا السكربت في محرر SQL على Supabase.', 'Exécutez ce script dans l\'éditeur SQL de votre console Supabase (SQL Editor).', 'Run this script in the Supabase SQL Editor.')}
                   </p>
                 </div>
               </div>
@@ -1127,7 +1153,7 @@ ON CONFLICT (id) DO NOTHING;`;
 
             <div className="flex-1 overflow-hidden flex flex-col space-y-2">
               <div className="flex items-center justify-between text-xs font-bold text-slate-600">
-                <span>Script PostgreSQL / Supabase :</span>
+                <span>{tr('سكربت PostgreSQL / Supabase:', 'Script PostgreSQL / Supabase :', 'PostgreSQL / Supabase Script:')}</span>
                 <button
                   onClick={handleCopySql}
                   className={cn(
@@ -1138,23 +1164,23 @@ ON CONFLICT (id) DO NOTHING;`;
                   )}
                 >
                   {isCopiedSql ? <CheckCheck size={14} /> : <Copy size={14} />}
-                  <span>{isCopiedSql ? "Copié !" : "Copier le code SQL"}</span>
+                  <span>{isCopiedSql ? tr('تم النسخ!', 'Copié !', 'Copied!') : tr('نسخ كود SQL', 'Copier le code SQL', 'Copy SQL Code')}</span>
                 </button>
               </div>
 
-              <pre className="flex-1 overflow-auto bg-slate-950 text-emerald-400 p-4 rounded-2xl text-xs font-mono border border-slate-800 leading-relaxed select-all">
+              <pre dir="ltr" className="flex-1 overflow-auto bg-slate-950 text-emerald-400 p-4 rounded-2xl text-xs font-mono border border-slate-800 leading-relaxed select-all text-left">
                 {supabaseSqlCode}
               </pre>
             </div>
 
             <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
-              <span>Statut : {isSupabaseConfigured() ? '✓ Supabase connecté' : 'Mode local actif (fallback localStorage)'}</span>
+              <span>{tr('الحالة:', 'Statut :', 'Status:')} {isSupabaseConfigured() ? tr('✓ متصل بـ Supabase', '✓ Supabase connecté', '✓ Supabase connected') : tr('الوضع المحلي نشط', 'Mode local actif (fallback localStorage)', 'Local mode active (localStorage fallback)')}</span>
               <button
                 type="button"
                 onClick={() => setIsSqlModalOpen(false)}
                 className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition-all"
               >
-                Fermer
+                {tr('إغلاق', 'Fermer', 'Close')}
               </button>
             </div>
           </div>

@@ -11,7 +11,7 @@ export function Login() {
   const [error, setError] = useState<string | null>(null);
   const { login } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { t, isRTL } = useLanguage();
+  const { t, tr, language, setLanguage, isRTL } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +20,11 @@ export function Login() {
     try {
       await login(username, password);
     } catch (err) {
-      setError(isRTL ? "Nom d'utilisateur ou mot de passe incorrect" : "Invalid username or password");
+      setError(tr(
+        'اسم المستخدم أو كلمة المرور غير صحيحة',
+        "Nom d'utilisateur ou mot de passe incorrect",
+        'Invalid username or password'
+      ));
     } finally {
       setIsSubmitting(false);
     }
@@ -35,6 +39,26 @@ export function Login() {
       >
         <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl shadow-primary/5 relative overflow-hidden">
           <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-primary via-accent to-primary" />
+
+          {/* Language Switcher */}
+          <div className={cn("flex mb-4", isRTL ? "justify-start" : "justify-end")}>
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+              {(['ar', 'fr', 'en'] as const).map((lang) => (
+                <button
+                  key={lang}
+                  type="button"
+                  onClick={() => setLanguage(lang)}
+                  className={cn(
+                    "px-2 py-1 text-[10px] font-bold rounded-md uppercase transition-all cursor-pointer",
+                    language === lang ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"
+                  )}
+                >
+                  {lang === 'ar' ? 'عربي' : lang}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className={cn("flex flex-col items-center mb-10", isRTL && "text-right")}>
             <div className="w-28 h-28 mb-5 transition-transform hover:scale-105">
               <img src="/logo.png" alt="Samy Academy Logo" className="w-full h-full object-contain" />
@@ -51,7 +75,7 @@ export function Login() {
             )}
             <div>
               <label className={cn("block text-sm font-medium text-slate-700 mb-1", isRTL && "text-right")}>
-                {isRTL ? "Nom d'utilisateur" : "Username"}
+                {tr('اسم المستخدم', "Nom d'utilisateur", 'Username')}
               </label>
               <input
                 type="text"

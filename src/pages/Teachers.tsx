@@ -8,7 +8,8 @@ import { classesService, studentsService, pointageService, teachersService } fro
 import { Modal } from '../components/Modal';
 
 export function Teachers() {
-  const { t, isRTL } = useLanguage();
+  const { t, tr, isRTL, language } = useLanguage();
+  const dateLocale = language === 'ar' ? 'ar-DZ' : language === 'fr' ? 'fr-FR' : 'en-GB';
   const { activeRole } = useAuth();
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -156,7 +157,7 @@ export function Teachers() {
   };
 
   const handleDeleteTeacher = async (id: string) => {
-    if (!confirm(isRTL ? 'Supprimer ce professeur ?' : 'Delete this teacher?')) return;
+    if (!confirm(tr('هل تريد حقاً حذف هذا الأستاذ؟', 'Supprimer ce professeur ?', 'Delete this teacher?'))) return;
     try {
       await teachersService.delete(id);
       setTeachers(prev => prev.filter(t => t.id !== id));
@@ -211,12 +212,12 @@ export function Teachers() {
             className="w-full md:w-auto bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl text-sm font-semibold shadow-lg shadow-primary/10 transition-all flex items-center justify-center gap-2"
           >
             <Plus size={18} />
-            Ajouter un enseignant
+            {tr('إضافة أستاذ', 'Ajouter un enseignant', 'Add Teacher')}
           </button>
         ) : (
           <div className="flex items-center gap-2 text-xs font-black text-slate-400 bg-slate-50 border border-slate-100 px-4 py-3 rounded-2xl">
             <AlertCircle size={15} className="text-amber-500" />
-            <span>La création d'enseignants est réservée au directeur</span>
+            <span>{tr('إضافة الأساتذة مخصصة للمدير فقط', 'La création d\'enseignants est réservée au directeur', 'Creating teachers is reserved for the Director')}</span>
           </div>
         )}
       </header>
@@ -233,14 +234,14 @@ export function Teachers() {
                   <th className="px-8 py-5 text-center">{t('salary')}</th>
                   <th className="px-8 py-5 text-center">{t('payment_month')}</th>
                   <th className="px-8 py-5 text-center">{t('status')}</th>
-                  <th className={cn("px-8 py-5", isRTL ? "text-left" : "text-right")}>Actions</th>
+                  <th className={cn("px-8 py-5", isRTL ? "text-left" : "text-right")}>{tr('الإجراءات', 'Actions', 'Actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {teachers.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-8 py-20 text-center text-slate-400 font-medium">
-                      Aucun enseignant trouvé
+                      {tr('لم يتم العثور على أي أستاذ', 'Aucun enseignant trouvé', 'No teachers found')}
                     </td>
                   </tr>
                 ) : teachers.map((teacher) => (
@@ -254,13 +255,13 @@ export function Teachers() {
                           <p className="text-base font-black text-primary group-hover:text-accent transition-colors">{teacher.name}</p>
                           <p className="text-xs text-slate-500 font-bold tracking-wider">{teacher.phone || teacher.email}</p>
                           {teacher.secondaryPhone && (
-                            <p className="text-[11px] text-slate-400 font-medium">Tél 2: {teacher.secondaryPhone}</p>
+                            <p className="text-[11px] text-slate-400 font-medium">{tr('هاتف 2:', 'Tél 2:', 'Phone 2:')} {teacher.secondaryPhone}</p>
                           )}
                           {teacher.phone && teacher.email && (
                             <p className="text-[11px] text-slate-400 font-medium">✉️ {teacher.email}</p>
                           )}
                           {teacher.birthDate && (
-                            <p className="text-[11px] text-slate-400 font-medium">🎂 Né(e) le: {teacher.birthDate}</p>
+                            <p className="text-[11px] text-slate-400 font-medium">🎂 {tr('تاريخ الميلاد:', 'Né(e) le:', 'Born:')} {teacher.birthDate}</p>
                           )}
                           {teacher.address && (
                             <p className="text-[11px] text-slate-400 font-medium truncate max-w-[200px]">📍 {teacher.address}</p>
@@ -288,7 +289,7 @@ export function Teachers() {
                       {activeRole === 'director' ? (
                         `${calculateSalary(teacher.id).toLocaleString()} ${t('currency')}`
                       ) : (
-                        <span className="text-slate-400 select-none text-[11px] font-black tracking-widest bg-slate-50 border border-slate-100/50 px-2 py-1 rounded-md" title="Confidentiel Directeur">•••••• DA</span>
+                        <span className="text-slate-400 select-none text-[11px] font-black tracking-widest bg-slate-50 border border-slate-100/50 px-2 py-1 rounded-md" title={tr('خاص بالمدير', 'Confidentiel Directeur', 'Director Confidential')}>•••••• {t('currency')}</span>
                       )}
                     </td>
                     <td className="px-8 py-6 text-center">
@@ -300,7 +301,7 @@ export function Teachers() {
                         >
                           <Calendar size={13} className="text-primary/70 shrink-0" />
                           <span>
-                            Mois {teacher.currentMonth || 1}
+                            {tr(`الشهر ${teacher.currentMonth || 1}`, `Mois ${teacher.currentMonth || 1}`, `Month ${teacher.currentMonth || 1}`)}
                           </span>
                           <ChevronDown size={13} className={cn("text-slate-400 transition-transform duration-200 group-hover:text-slate-600", openMonthDropdownId === teacher.id && "rotate-180 text-primary")} />
                         </button>
@@ -330,7 +331,7 @@ export function Teachers() {
                                       isSelected ? "text-primary font-bold bg-primary/10" : "text-slate-700"
                                     )}
                                   >
-                                    <span>Mois {m}</span>
+                                    <span>{tr(`الشهر ${m}`, `Mois ${m}`, `Month ${m}`)}</span>
                                     {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
                                   </button>
                                 );
@@ -357,7 +358,7 @@ export function Teachers() {
                                   ? "bg-emerald-50 text-emerald-700 ring-emerald-200 hover:bg-emerald-100"
                                   : "bg-rose-50 text-rose-700 ring-rose-200 hover:bg-rose-100"
                               )}
-                              title={`Statut pour Mois ${activeMonth}`}
+                              title={tr(`الحالة للشهر ${activeMonth}`, `Statut pour Mois ${activeMonth}`, `Status for Month ${activeMonth}`)}
                             >
                               <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", monthStatus === 'Paid' ? "bg-emerald-500" : "bg-rose-500")} />
                               <span>{monthStatus === 'Paid' ? t('paid') : t('pending')}</span>
@@ -420,7 +421,7 @@ export function Teachers() {
                          <button
                            onClick={() => handleViewLogs(teacher)}
                            className="p-2 text-slate-300 hover:text-primary transition-colors"
-                           title="Historique de présence"
+                           title={tr('سجل الحضور', 'Historique de présence', 'Attendance history')}
                          >
                            <FileText size={18} />
                          </button>
@@ -439,6 +440,10 @@ export function Teachers() {
                                  setEditTeacher({
                                    name: teacher.name,
                                    email: teacher.email,
+                                   phone: teacher.phone || '',
+                                   secondaryPhone: teacher.secondaryPhone || '',
+                                   birthDate: teacher.birthDate || '',
+                                   address: teacher.address || '',
                                    subject: teacher.subject,
                                    salary: teacher.salary,
                                    paymentStatus: teacher.paymentStatus,
@@ -447,7 +452,7 @@ export function Teachers() {
                                  setIsEditModalOpen(true);
                                }}
                                className="p-2 text-slate-300 hover:text-accent transition-colors"
-                               title="Modifier l'enseignant"
+                               title={tr('تعديل الأستاذ', 'Modifier l\'enseignant', 'Edit teacher')}
                              >
                                <Pencil size={15} />
                              </button>
@@ -461,7 +466,7 @@ export function Teachers() {
                         ) : (
                           <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-slate-400 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-xl">
                             <Shield size={12} className="text-amber-500" />
-                            <span>Lecture seule</span>
+                            <span>{tr('للقراءة فقط', 'Lecture seule', 'Read only')}</span>
                           </div>
                         )}
                       </div>
@@ -478,15 +483,15 @@ export function Teachers() {
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        title="Ajouter un nouvel enseignant"
+        title={tr('إضافة أستاذ جديد', 'Ajouter un nouvel enseignant', 'Add New Teacher')}
       >
         <form onSubmit={handleCreateTeacher} className="space-y-4">
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">Nom de l'enseignant</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400">{tr('اسم الأستاذ', 'Nom de l\'enseignant', 'Teacher Name')}</label>
               {newTeacher.name && (
                 <span className="text-[11px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-lg">
-                  Sortie: {newTeacher.name}
+                  {tr('معاينة:', 'Sortie:', 'Output:')} {newTeacher.name}
                 </span>
               )}
             </div>
@@ -496,12 +501,12 @@ export function Teachers() {
               value={newTeacher.name}
               onChange={e => setNewTeacher({ ...newTeacher, name: e.target.value })}
               className="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 transition-all font-bold"
-              placeholder="Nom complet"
+              placeholder={tr('الاسم الكامل', 'Nom complet', 'Full name')}
             />
           </div>
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">Numéro de téléphone principal</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400">{tr('رقم الهاتف الرئيسي', 'Numéro de téléphone principal', 'Primary Phone Number')}</label>
               {newTeacher.phone && (
                 <a 
                   href={`tel:${newTeacher.phone}`} 
@@ -509,7 +514,7 @@ export function Teachers() {
                   rel="noreferrer" 
                   className="text-[11px] font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-0.5 rounded-lg flex items-center gap-1 transition-colors"
                 >
-                  📞 Sortie: {newTeacher.phone}
+                  📞 {newTeacher.phone}
                 </a>
               )}
             </div>
@@ -524,7 +529,7 @@ export function Teachers() {
           </div>
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">2ème Numéro de téléphone (Optionnel)</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400">{tr('رقم هاتف ثاني (اختياري)', '2ème Numéro de téléphone (Optionnel)', '2nd Phone Number (Optional)')}</label>
               {newTeacher.secondaryPhone && (
                 <a 
                   href={`tel:${newTeacher.secondaryPhone}`} 
@@ -532,7 +537,7 @@ export function Teachers() {
                   rel="noreferrer" 
                   className="text-[11px] font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-0.5 rounded-lg flex items-center gap-1 transition-colors"
                 >
-                  📱 Sortie 2: {newTeacher.secondaryPhone}
+                  📱 {newTeacher.secondaryPhone}
                 </a>
               )}
             </div>
@@ -546,7 +551,7 @@ export function Teachers() {
           </div>
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">Email (Optionnel)</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400">{tr('البريد الإلكتروني (اختياري)', 'Email (Optionnel)', 'Email (Optional)')}</label>
               {newTeacher.email && (
                 <a 
                   href={`mailto:${newTeacher.email}`} 
@@ -561,12 +566,12 @@ export function Teachers() {
               value={newTeacher.email || ''}
               onChange={e => setNewTeacher({ ...newTeacher, email: e.target.value })}
               className="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 transition-all font-bold"
-              placeholder="enseignant@exemple.com"
+              placeholder="teacher@example.com"
             />
           </div>
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">Date de Naissance (Optionnel)</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400">{tr('تاريخ الميلاد (اختياري)', 'Date de Naissance (Optionnel)', 'Birth Date (Optional)')}</label>
               {newTeacher.birthDate && (
                 <span className="text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg">
                   🎂 {newTeacher.birthDate}
@@ -582,7 +587,7 @@ export function Teachers() {
           </div>
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">Adresse de résidence (Optionnel)</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400">{tr('عنوان الإقامة (اختياري)', 'Adresse de résidence (Optionnel)', 'Address (Optional)')}</label>
               {newTeacher.address && (
                 <span className="text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg truncate max-w-[180px]">
                   📍 {newTeacher.address}
@@ -594,7 +599,7 @@ export function Teachers() {
               value={newTeacher.address || ''}
               onChange={e => setNewTeacher({ ...newTeacher, address: e.target.value })}
               className="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 transition-all font-bold"
-              placeholder="Ex: Cité 1000 Logements, Alger"
+              placeholder={tr('مثال: حي 1000 مسكن، الجزائر', 'Ex: Cité 1000 Logements, Alger', 'e.g. City Center, Algiers')}
             />
           </div>
           <div className="space-y-1">
@@ -612,12 +617,12 @@ export function Teachers() {
               value={newTeacher.subject}
               onChange={e => setNewTeacher({ ...newTeacher, subject: e.target.value })}
               className="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 transition-all font-bold"
-              placeholder="Ex: Mathématiques"
+              placeholder={tr('مثال: الرياضيات', 'Ex: Mathématiques', 'e.g. Mathematics')}
             />
           </div>
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">{t('token_id')} (Optionnel)</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400">{t('token_id')} ({tr('اختياري', 'Optionnel', 'Optional')})</label>
               {newTeacher.tokenId && (
                 <span className="text-[11px] font-mono font-black text-primary bg-primary/10 px-2 py-0.5 rounded-lg">
                   🏷️ {newTeacher.tokenId}
@@ -636,22 +641,22 @@ export function Teachers() {
           {/* LIVE OUTPUT PREVIEW CARD FOR TEACHER CREATION */}
           <div className="p-4 bg-slate-900 text-white rounded-2xl space-y-2 border border-slate-800 shadow-lg">
             <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
-              <span>Aperçu Fiche Enseignant (Output Direct)</span>
-              <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-md">Temps Réel</span>
+              <span>{tr('معاينة بطاقة الأستاذ', 'Aperçu Fiche Enseignant', 'Teacher Card Preview')}</span>
+              <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-md">{tr('مباشر', 'Temps Réel', 'Live')}</span>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs font-bold text-slate-200">
-              <div>Nom: <span className="text-white font-extrabold">{newTeacher.name || '—'}</span></div>
-              <div>Matière: <span className="text-amber-400 font-bold">{newTeacher.subject || '—'}</span></div>
-              <div>Tél 1: <span className="text-emerald-400 font-mono">{newTeacher.phone || '—'}</span></div>
-              {newTeacher.secondaryPhone && <div>Tél 2: <span className="text-emerald-300 font-mono">{newTeacher.secondaryPhone}</span></div>}
-              {newTeacher.email && <div>Email: <span className="text-slate-300">{newTeacher.email}</span></div>}
-              {newTeacher.birthDate && <div>Né(e) le: <span className="text-slate-300">{newTeacher.birthDate}</span></div>}
-              {newTeacher.address && <div>Adresse: <span className="text-slate-300">{newTeacher.address}</span></div>}
-              {newTeacher.tokenId && <div>Code Token: <span className="font-mono text-emerald-400">{newTeacher.tokenId}</span></div>}
+              <div>{tr('الاسم:', 'Nom:', 'Name:')} <span className="text-white font-extrabold">{newTeacher.name || '—'}</span></div>
+              <div>{t('subject')}: <span className="text-amber-400 font-bold">{newTeacher.subject || '—'}</span></div>
+              <div>{tr('هاتف 1:', 'Tél 1:', 'Phone 1:')} <span className="text-emerald-400 font-mono">{newTeacher.phone || '—'}</span></div>
+              {newTeacher.secondaryPhone && <div>{tr('هاتف 2:', 'Tél 2:', 'Phone 2:')} <span className="text-emerald-300 font-mono">{newTeacher.secondaryPhone}</span></div>}
+              {newTeacher.email && <div>{tr('البريد:', 'Email:', 'Email:')} <span className="text-slate-300">{newTeacher.email}</span></div>}
+              {newTeacher.birthDate && <div>{tr('الميلاد:', 'Né(e) le:', 'Born:')} <span className="text-slate-300">{newTeacher.birthDate}</span></div>}
+              {newTeacher.address && <div>{tr('العنوان:', 'Adresse:', 'Address:')} <span className="text-slate-300">{newTeacher.address}</span></div>}
+              {newTeacher.tokenId && <div>{t('token_id')}: <span className="font-mono text-emerald-400">{newTeacher.tokenId}</span></div>}
             </div>
           </div>
           <button type="submit" className="w-full bg-primary text-white p-4 rounded-2xl font-black shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
-            Ajouter l'enseignant
+            {tr('إضافة الأستاذ', 'Ajouter l\'enseignant', 'Add Teacher')}
           </button>
         </form>
       </Modal>
@@ -660,15 +665,15 @@ export function Teachers() {
       <Modal 
         isOpen={isEditModalOpen} 
         onClose={() => setIsEditModalOpen(false)} 
-        title="Modifier l'enseignant"
+        title={tr('تعديل بيانات الأستاذ', 'Modifier l\'enseignant', 'Edit Teacher')}
       >
         <form onSubmit={handleUpdateTeacher} className="space-y-4">
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">Nom de l'enseignant</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400">{tr('اسم الأستاذ', 'Nom de l\'enseignant', 'Teacher Name')}</label>
               {editTeacher.name && (
                 <span className="text-[11px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-lg">
-                  Sortie: {editTeacher.name}
+                  {tr('معاينة:', 'Sortie:', 'Output:')} {editTeacher.name}
                 </span>
               )}
             </div>
@@ -682,7 +687,7 @@ export function Teachers() {
           </div>
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">Numéro de téléphone principal</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400">{tr('رقم الهاتف الرئيسي', 'Numéro de téléphone principal', 'Primary Phone Number')}</label>
               {editTeacher.phone && (
                 <a 
                   href={`tel:${editTeacher.phone}`} 
@@ -690,7 +695,7 @@ export function Teachers() {
                   rel="noreferrer" 
                   className="text-[11px] font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-0.5 rounded-lg flex items-center gap-1 transition-colors"
                 >
-                  📞 Sortie: {editTeacher.phone}
+                  📞 {editTeacher.phone}
                 </a>
               )}
             </div>
@@ -705,7 +710,7 @@ export function Teachers() {
           </div>
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">2ème Numéro de téléphone (Optionnel)</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400">{tr('رقم هاتف ثاني (اختياري)', '2ème Numéro de téléphone (Optionnel)', '2nd Phone Number (Optional)')}</label>
               {editTeacher.secondaryPhone && (
                 <a 
                   href={`tel:${editTeacher.secondaryPhone}`} 
@@ -713,7 +718,7 @@ export function Teachers() {
                   rel="noreferrer" 
                   className="text-[11px] font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-0.5 rounded-lg flex items-center gap-1 transition-colors"
                 >
-                  📱 Sortie 2: {editTeacher.secondaryPhone}
+                  📱 {editTeacher.secondaryPhone}
                 </a>
               )}
             </div>
@@ -727,7 +732,7 @@ export function Teachers() {
           </div>
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">Email (Optionnel)</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400">{tr('البريد الإلكتروني (اختياري)', 'Email (Optionnel)', 'Email (Optional)')}</label>
               {editTeacher.email && (
                 <a 
                   href={`mailto:${editTeacher.email}`} 
@@ -742,12 +747,12 @@ export function Teachers() {
               value={editTeacher.email || ''}
               onChange={e => setEditTeacher({ ...editTeacher, email: e.target.value })}
               className="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 transition-all font-bold"
-              placeholder="enseignant@exemple.com"
+              placeholder="teacher@example.com"
             />
           </div>
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">Date de Naissance (Optionnel)</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400">{tr('تاريخ الميلاد (اختياري)', 'Date de Naissance (Optionnel)', 'Birth Date (Optional)')}</label>
               {editTeacher.birthDate && (
                 <span className="text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg">
                   🎂 {editTeacher.birthDate}
@@ -763,7 +768,7 @@ export function Teachers() {
           </div>
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">Adresse de résidence (Optionnel)</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400">{tr('عنوان الإقامة (اختياري)', 'Adresse de résidence (Optionnel)', 'Address (Optional)')}</label>
               {editTeacher.address && (
                 <span className="text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg truncate max-w-[180px]">
                   📍 {editTeacher.address}
@@ -775,7 +780,7 @@ export function Teachers() {
               value={editTeacher.address || ''}
               onChange={e => setEditTeacher({ ...editTeacher, address: e.target.value })}
               className="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 transition-all font-bold"
-              placeholder="Ex: Cité 1000 Logements, Alger"
+              placeholder={tr('مثال: حي 1000 مسكن، الجزائر', 'Ex: Cité 1000 Logements, Alger', 'e.g. City Center, Algiers')}
             />
           </div>
           <div className="space-y-1">
@@ -797,7 +802,7 @@ export function Teachers() {
           </div>
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">{t('token_id')} (Optionnel)</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400">{t('token_id')} ({tr('اختياري', 'Optionnel', 'Optional')})</label>
               {editTeacher.tokenId && (
                 <span className="text-[11px] font-mono font-black text-primary bg-primary/10 px-2 py-0.5 rounded-lg">
                   🏷️ {editTeacher.tokenId}
@@ -827,23 +832,23 @@ export function Teachers() {
           {/* LIVE OUTPUT PREVIEW CARD FOR TEACHER EDIT */}
           <div className="p-4 bg-slate-900 text-white rounded-2xl space-y-2 border border-slate-800 shadow-lg">
             <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
-              <span>Fiche actuelle enregistrée (Output Direct)</span>
-              <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-md">En Direct</span>
+              <span>{tr('معاينة التعديلات', 'Fiche actuelle enregistrée', 'Updated Teacher Preview')}</span>
+              <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-md">{tr('مباشر', 'En Direct', 'Live')}</span>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs font-bold text-slate-200">
-              <div>Nom: <span className="text-white font-extrabold">{editTeacher.name || '—'}</span></div>
-              <div>Matière: <span className="text-amber-400 font-bold">{editTeacher.subject || '—'}</span></div>
-              <div>Tél 1: <span className="text-emerald-400 font-mono">{editTeacher.phone || '—'}</span></div>
-              {editTeacher.secondaryPhone && <div>Tél 2: <span className="text-emerald-300 font-mono">{editTeacher.secondaryPhone}</span></div>}
-              {editTeacher.email && <div>Email: <span className="text-slate-300">{editTeacher.email}</span></div>}
-              {editTeacher.birthDate && <div>Né(e) le: <span className="text-slate-300">{editTeacher.birthDate}</span></div>}
-              {editTeacher.address && <div>Adresse: <span className="text-slate-300">{editTeacher.address}</span></div>}
-              {editTeacher.tokenId && <div>Code Token: <span className="font-mono text-emerald-400">{editTeacher.tokenId}</span></div>}
+              <div>{tr('الاسم:', 'Nom:', 'Name:')} <span className="text-white font-extrabold">{editTeacher.name || '—'}</span></div>
+              <div>{t('subject')}: <span className="text-amber-400 font-bold">{editTeacher.subject || '—'}</span></div>
+              <div>{tr('هاتف 1:', 'Tél 1:', 'Phone 1:')} <span className="text-emerald-400 font-mono">{editTeacher.phone || '—'}</span></div>
+              {editTeacher.secondaryPhone && <div>{tr('هاتف 2:', 'Tél 2:', 'Phone 2:')} <span className="text-emerald-300 font-mono">{editTeacher.secondaryPhone}</span></div>}
+              {editTeacher.email && <div>{tr('البريد:', 'Email:', 'Email:')} <span className="text-slate-300">{editTeacher.email}</span></div>}
+              {editTeacher.birthDate && <div>{tr('الميلاد:', 'Né(e) le:', 'Born:')} <span className="text-slate-300">{editTeacher.birthDate}</span></div>}
+              {editTeacher.address && <div>{tr('العنوان:', 'Adresse:', 'Address:')} <span className="text-slate-300">{editTeacher.address}</span></div>}
+              {editTeacher.tokenId && <div>{t('token_id')}: <span className="font-mono text-emerald-400">{editTeacher.tokenId}</span></div>}
             </div>
           </div>
 
           <button type="submit" className="w-full bg-primary text-white p-4 rounded-2xl font-black shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
-            Enregistrer les modifications
+            {tr('حفظ التعديلات', 'Enregistrer les modifications', 'Save Changes')}
           </button>
         </form>
       </Modal>
@@ -852,18 +857,18 @@ export function Teachers() {
       <Modal
         isOpen={isLogsModalOpen}
         onClose={() => setIsLogsModalOpen(false)}
-        title={`Historique de présence : ${selectedTeacher?.name}`}
+        title={`${tr('سجل الحضور:', 'Historique de présence :', 'Attendance History:')} ${selectedTeacher?.name || ''}`}
       >
         <div className="space-y-6">
           <div className="flex items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100">
             <div className="flex items-center gap-3">
               <Clock className="text-primary" size={20} />
               <span className="text-sm font-bold text-slate-600">
-                Historique du mois en cours
+                {tr('سجل الشهر الحالي', 'Historique du mois en cours', 'Current month history')}
               </span>
             </div>
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-white px-3 py-1 rounded-full border border-slate-100">
-              {new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+              {new Date().toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' })}
             </span>
           </div>
 
@@ -872,7 +877,7 @@ export function Teachers() {
               <div className="py-20 flex flex-col items-center justify-center gap-4">
                 <Loader2 className="w-8 h-8 text-primary animate-spin" />
                 <p className="text-xs font-black uppercase tracking-widest text-slate-400">
-                  Chargement...
+                  {tr('جاري التحميل...', 'Chargement...', 'Loading...')}
                 </p>
               </div>
             ) : teacherLogs.length === 0 ? (
@@ -881,7 +886,7 @@ export function Teachers() {
                   <FileText size={24} />
                 </div>
                 <p className="text-sm font-bold text-slate-400">
-                  Aucun pointage enregistré pour cet enseignant ce mois-ci
+                  {tr('لا يوجد أي تسجيل حضور لهذا الأستاذ هذا الشهر', 'Aucun pointage enregistré pour cet enseignant ce mois-ci', 'No attendance recorded for this teacher this month')}
                 </p>
               </div>
             ) : (
@@ -894,7 +899,7 @@ export function Teachers() {
                       </div>
                       <div>
                         <p className="text-sm font-black text-primary">
-                          {new Date(log.timestamp).toLocaleDateString('fr-FR', { 
+                          {new Date(log.timestamp).toLocaleDateString(dateLocale, { 
                             weekday: 'long', 
                             day: 'numeric', 
                             month: 'short' 
@@ -906,9 +911,9 @@ export function Teachers() {
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className={isRTL ? "text-left" : "text-right"}>
                        <span className="inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase bg-primary/5 text-primary border border-primary/10">
-                         {log.details || "Pointage"}
+                         {log.details || tr('تسجيل حضور', 'Pointage', 'Check-in')}
                        </span>
                     </div>
                   </div>
@@ -919,13 +924,13 @@ export function Teachers() {
 
           <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-              Total: {teacherLogs.length} sessions
+              {tr(`الإجمالي: ${teacherLogs.length} حصص`, `Total: ${teacherLogs.length} sessions`, `Total: ${teacherLogs.length} sessions`)}
             </div>
             <button 
               onClick={() => setIsLogsModalOpen(false)}
               className="bg-slate-900 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95"
             >
-              Fermer
+              {tr('إغلاق', 'Fermer', 'Close')}
             </button>
           </div>
         </div>

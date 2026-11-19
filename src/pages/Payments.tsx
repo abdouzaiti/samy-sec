@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  DollarSign, 
   Search, 
   TrendingUp, 
-  Users, 
   UserSquare2, 
   CheckCircle2, 
   Clock, 
-  ArrowUpRight,
-  Loader2,
-  AlertCircle
+  Loader2
 } from 'lucide-react';
 import { Student, Teacher, SchoolClass } from '../types';
 import { cn } from '../lib/utils';
@@ -17,7 +13,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { studentsService, teachersService, classesService } from '../services/supabaseService';
 
 export function Payments() {
-  const { t, isRTL } = useLanguage();
+  const { t, tr, isRTL } = useLanguage();
   const [students, setStudents] = useState<Student[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -65,18 +61,18 @@ export function Payments() {
     ...students.map(s => ({ 
       id: s.id, 
       name: s.name, 
-      type: 'Student', 
+      type: 'Student' as const, 
       amount: getStudentPrice(s.classId),
       status: s.paymentStatus,
-      date: 'This month'
+      date: tr('هذا الشهر', 'Ce mois-ci', 'This month')
     })),
-    ...teachers.map(t => ({ 
-      id: t.id, 
-      name: t.name, 
-      type: 'Teacher', 
-      amount: t.salary,
-      status: t.paymentStatus,
-      date: t.lastPaymentDate || 'Pending'
+    ...teachers.map(teach => ({ 
+      id: teach.id, 
+      name: teach.name, 
+      type: 'Teacher' as const, 
+      amount: teach.salary,
+      status: teach.paymentStatus,
+      date: teach.lastPaymentDate || t('pending')
     }))
   ].filter(item => item.name.toLowerCase().includes(search.toLowerCase()));
 
@@ -92,8 +88,12 @@ export function Payments() {
     <div className={cn("space-y-12 animate-in", isRTL && "text-right")}>
       <header className={cn("flex flex-col md:flex-row justify-between items-start md:items-end gap-4", isRTL && "md:flex-row-reverse")}>
         <div className={cn(isRTL && "text-right")}>
-          <h1 className="text-3xl md:text-5xl font-black text-primary tracking-tighter">{isRTL ? "Gestion des Paiements" : "Payment Ledger"}</h1>
-          <p className="text-slate-500 mt-2 text-lg">{isRTL ? "Suivi des revenus et des salaires" : "Track school revenue and staff payroll"}</p>
+          <h1 className="text-3xl md:text-5xl font-black text-primary tracking-tighter">
+            {tr('إدارة المدفوعات', 'Gestion des Paiements', 'Payment Ledger')}
+          </h1>
+          <p className="text-slate-500 mt-2 text-lg">
+            {tr('متابعة المداخيل ورواتب الأساتذة', 'Suivi des revenus et des salaires', 'Track school revenue and staff payroll')}
+          </p>
         </div>
       </header>
 
@@ -103,9 +103,13 @@ export function Payments() {
             <div className="p-3 bg-emerald-500 text-white rounded-2xl">
               <TrendingUp size={24} />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-100 px-3 py-1 rounded-full">Collected</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-100 px-3 py-1 rounded-full">
+              {tr('محصل', 'Encaissé', 'Collected')}
+            </span>
           </div>
-          <p className="text-xs font-black text-emerald-600/60 uppercase tracking-[0.2em] mb-2">{isRTL ? "REVENUS RÉCOLTÉS" : "TOTAL REVENUE"}</p>
+          <p className="text-xs font-black text-emerald-600/60 uppercase tracking-[0.2em] mb-2">
+            {tr('المداخيل المحصلة', 'REVENUS RÉCOLTÉS', 'TOTAL REVENUE')}
+          </p>
           <h3 className="text-3xl font-black text-emerald-700 tracking-tighter">{totalCollected.toLocaleString()} {t('currency')}</h3>
         </div>
 
@@ -114,9 +118,13 @@ export function Payments() {
             <div className="p-3 bg-amber-500 text-white rounded-2xl">
               <Clock size={24} />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-100 px-3 py-1 rounded-full">Outstanding</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-100 px-3 py-1 rounded-full">
+              {tr('معلق', 'En souffrance', 'Outstanding')}
+            </span>
           </div>
-          <p className="text-xs font-black text-amber-600/60 uppercase tracking-[0.2em] mb-2">{isRTL ? "PAIEMENTS EN ATTENTE" : "PENDING STUDENTS"}</p>
+          <p className="text-xs font-black text-amber-600/60 uppercase tracking-[0.2em] mb-2">
+            {tr('مدفوعات قيد الانتظار', 'PAIEMENTS EN ATTENTE', 'PENDING STUDENTS')}
+          </p>
           <h3 className="text-3xl font-black text-amber-700 tracking-tighter">{totalPending.toLocaleString()} {t('currency')}</h3>
         </div>
 
@@ -125,21 +133,27 @@ export function Payments() {
             <div className="p-3 bg-rose-500 text-white rounded-2xl">
               <UserSquare2 size={24} />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-rose-600 bg-rose-100 px-3 py-1 rounded-full">Payroll</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-rose-600 bg-rose-100 px-3 py-1 rounded-full">
+              {tr('الرواتب', 'Salaires', 'Payroll')}
+            </span>
           </div>
-          <p className="text-xs font-black text-rose-600/60 uppercase tracking-[0.2em] mb-2">{isRTL ? "TOTAL SALAIRES" : "MONTHLY PAYROLL"}</p>
+          <p className="text-xs font-black text-rose-600/60 uppercase tracking-[0.2em] mb-2">
+            {tr('إجمالي الرواتب', 'TOTAL SALAIRES', 'MONTHLY PAYROLL')}
+          </p>
           <h3 className="text-3xl font-black text-rose-700 tracking-tighter">{totalPayroll.toLocaleString()} {t('currency')}</h3>
         </div>
       </div>
 
       <div className="space-y-6">
         <div className={cn("flex flex-col md:flex-row justify-between items-center gap-6", isRTL && "md:flex-row-reverse text-right")}>
-          <h2 className="text-2xl font-black text-primary tracking-tight">{isRTL ? "Historique des Transactions" : "Transaction History"}</h2>
+          <h2 className="text-2xl font-black text-primary tracking-tight">
+            {tr('سجل المعاملات المالية', 'Historique des Transactions', 'Transaction History')}
+          </h2>
           <div className="relative w-full md:w-80">
             <Search className={cn("absolute top-1/2 -translate-y-1/2 text-slate-400", isRTL ? "right-4" : "left-4")} size={18} />
             <input
               type="text"
-              placeholder={isRTL ? "Rechercher..." : "Search transactions..."}
+              placeholder={tr('البحث في المعاملات...', 'Rechercher...', 'Search transactions...')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className={cn(
@@ -154,12 +168,12 @@ export function Payments() {
           <table className={cn("w-full text-left min-w-[650px]", isRTL && "text-right")}>
             <thead>
               <tr className="bg-slate-50/50 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
-                <th className="px-8 py-5">Entity</th>
-                <th className="px-8 py-5">Type</th>
-                <th className="px-8 py-5">Date</th>
-                <th className="px-8 py-5">Amount</th>
-                <th className="px-8 py-5">Status</th>
-                <th className={cn("px-8 py-5", isRTL ? "text-left" : "text-right")}>Action</th>
+                <th className="px-8 py-5">{tr('الاسم', 'Entité', 'Entity')}</th>
+                <th className="px-8 py-5">{tr('النوع', 'Type', 'Type')}</th>
+                <th className="px-8 py-5">{tr('التاريخ', 'Date', 'Date')}</th>
+                <th className="px-8 py-5">{tr('المبلغ', 'Montant', 'Amount')}</th>
+                <th className="px-8 py-5">{tr('الحالة', 'État', 'Status')}</th>
+                <th className={cn("px-8 py-5", isRTL ? "text-left" : "text-right")}>{tr('إجراء', 'Action', 'Action')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -173,7 +187,7 @@ export function Payments() {
                       "text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg",
                       item.type === 'Student' ? "bg-blue-50 text-blue-600" : "bg-purple-50 text-purple-600"
                     )}>
-                      {item.type}
+                      {item.type === 'Student' ? tr('تلميذ', 'Élève', 'Student') : tr('أستاذ', 'Enseignant', 'Teacher')}
                     </span>
                   </td>
                   <td className="px-8 py-6 text-sm font-medium text-slate-400">{item.date}</td>
@@ -184,12 +198,12 @@ export function Payments() {
                       item.status === 'Paid' ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : "bg-rose-50 text-rose-700 ring-rose-100"
                     )}>
                       {item.status === 'Paid' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
-                      {item.status}
+                      {item.status === 'Paid' ? t('paid') : item.status === 'Pending' ? t('pending') : t('unpaid')}
                     </span>
                   </td>
                   <td className={cn("px-8 py-6", isRTL ? "text-left" : "text-right")}>
                     <button className="text-[10px] font-black text-primary hover:text-accent transition-colors uppercase tracking-widest underline-offset-4 hover:underline">
-                      View details
+                      {tr('عرض التفاصيل', 'Voir détails', 'View details')}
                     </button>
                   </td>
                 </tr>

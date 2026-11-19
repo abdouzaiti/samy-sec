@@ -13,7 +13,7 @@ interface TopbarProps {
 
 export function Topbar({ onMenuClick }: TopbarProps) {
   const { user } = useAuth();
-  const { language, setLanguage, isRTL } = useLanguage();
+  const { language, setLanguage, t, tr, isRTL } = useLanguage();
   const navigate = useNavigate();
   const [alertCount, setAlertCount] = useState<number>(0);
 
@@ -60,7 +60,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
 
   return (
     <header className="h-16 bg-white/80 backdrop-blur-md sticky top-0 z-20 px-3 sm:px-6 flex items-center justify-between border-b border-slate-100">
-      <div className={cn("flex items-center gap-2 sm:gap-4 flex-1", isRTL && "flex-row-reverse")}>
+      <div className="flex items-center gap-2 sm:gap-4 flex-1">
         <button 
           onClick={onMenuClick}
           className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-all active:scale-95"
@@ -72,7 +72,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
           <Search className={cn("absolute top-1/2 -translate-y-1/2 text-slate-400", isRTL ? "right-3" : "left-3")} size={18} />
           <input
             type="text"
-            placeholder="Rechercher..."
+            placeholder={tr('بحث...', 'Rechercher...', 'Search...')}
             className={cn(
               "w-full pr-4 py-2 bg-slate-100 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none",
               isRTL ? "pr-10 pl-4 text-right" : "pl-10 pr-4"
@@ -81,14 +81,14 @@ export function Topbar({ onMenuClick }: TopbarProps) {
         </div>
       </div>
 
-      <div className={cn("flex items-center gap-1.5 sm:gap-4 md:gap-6", isRTL && "flex-row-reverse")}>
+      <div className="flex items-center gap-1.5 sm:gap-4 md:gap-6">
         <div className="flex items-center gap-1 bg-slate-100 p-0.5 sm:p-1 rounded-lg">
-          {(['fr', 'ar', 'en'] as const).map((lang) => (
+          {(['ar', 'fr', 'en'] as const).map((lang) => (
             <button
               key={lang}
               onClick={() => setLanguage(lang)}
               className={cn(
-                "px-1.5 sm:px-2 py-1 text-[10px] font-bold rounded-md uppercase transition-all",
+                "px-1.5 sm:px-2 py-1 text-[10px] font-bold rounded-md uppercase transition-all cursor-pointer",
                 language === lang ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"
               )}
             >
@@ -101,7 +101,10 @@ export function Topbar({ onMenuClick }: TopbarProps) {
         <button 
           onClick={() => navigate('/notifications')}
           className="relative p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors group cursor-pointer"
-          title={alertCount > 0 ? `${alertCount} élèves avec 3+ séances impayées` : "Notifications"}
+          title={alertCount > 0 
+            ? tr(`${alertCount} تلاميذ لديهم 3+ حصص غير مدفوعة`, `${alertCount} élèves avec 3+ séances impayées`, `${alertCount} students with 3+ unpaid sessions`)
+            : t('notifications')
+          }
         >
           <Bell size={20} className="group-hover:text-primary transition-colors" />
           {alertCount > 0 ? (
@@ -117,11 +120,17 @@ export function Topbar({ onMenuClick }: TopbarProps) {
         </button>
 
         <div className={cn("flex items-center gap-2.5", isRTL ? "pr-2 sm:pr-6" : "pl-2 sm:pl-6")}>
-          <div className={cn("text-right hidden sm:block", isRTL && "text-left")}>
+          <div className={cn("hidden sm:block", isRTL ? "text-left" : "text-right")}>
             <p className="text-sm font-semibold text-slate-900 leading-none">
-              {user?.role === 'director' ? (isRTL ? 'Directeur' : 'Director') : user?.displayName}
+              {user?.role === 'director'
+                ? tr('المدير', 'Directeur', 'Director')
+                : tr('أمانة أكاديمية سامي', 'Secrétariat Samy Academy', 'Samy Academy Secretariat')}
             </p>
-            <p className="text-xs text-slate-500 mt-1 capitalize">{user?.role}</p>
+            <p className="text-xs text-slate-500 mt-1 capitalize">
+              {user?.role === 'director'
+                ? tr('مدير', 'Directeur', 'Director')
+                : tr('أمانة', 'Secrétaire', 'Secretary')}
+            </p>
           </div>
           <div className="w-8 h-8 sm:w-9 sm:h-9 bg-slate-200 rounded-full flex items-center justify-center text-slate-600 shrink-0">
             <UserCircle size={26} />

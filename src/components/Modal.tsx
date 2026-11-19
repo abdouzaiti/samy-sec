@@ -1,8 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
-import { useLanguage } from '../context/LanguageContext';
 
 interface ModalProps {
   isOpen: boolean;
@@ -12,7 +10,6 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, children }: ModalProps) {
-  const { isRTL } = useLanguage();
 
   return (
     <AnimatePresence>
@@ -31,10 +28,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="relative bg-white w-full max-w-lg rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col z-10"
           >
-            <div className={cn(
-              "p-4 sm:p-6 border-b border-slate-100 flex items-center justify-between shrink-0",
-              isRTL && "flex-row-reverse"
-            )}>
+            <div className="p-4 sm:p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
               <h3 className="text-lg sm:text-xl font-black text-primary tracking-tight">{title}</h3>
               <button 
                 onClick={onClose}

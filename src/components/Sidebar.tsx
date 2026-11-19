@@ -77,13 +77,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { icon: UserSquare2, label: t('teachers'), href: '/teachers' },
     { icon: CreditCard, label: t('payments'), href: '/payments' },
     { icon: Receipt, label: t('expenses'), href: '/expenses' },
-    { icon: Bell, label: isRTL ? 'التنبيهات' : 'Notifications', href: '/notifications', badge: alertCount },
+    { icon: Bell, label: t('notifications'), href: '/notifications', badge: alertCount },
   ];
 
   return (
     <aside className={cn(
-      "w-64 h-screen bg-white flex flex-col fixed top-0 z-40 transition-all duration-300 shadow-xl border-r border-slate-100",
-      isRTL ? "right-0" : "left-0",
+      "w-64 h-screen bg-white flex flex-col fixed top-0 z-40 transition-all duration-300 shadow-xl border-slate-100",
+      isRTL ? "right-0 border-l" : "left-0 border-r",
       !isOpen && (isRTL ? "translate-x-64" : "-translate-x-64")
     )}>
       <div className="px-6 pt-5 pb-3 flex items-center justify-between gap-2">
@@ -129,10 +129,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       <div className="p-4">
         <button
           onClick={logout}
-          className={cn(
-            "flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-700 transition-colors",
-            isRTL && "flex-row-reverse"
-          )}
+          className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-700 transition-colors cursor-pointer"
         >
           <LogOut size={18} className={cn(isRTL && "rotate-180")} />
           {t('signOut')}
