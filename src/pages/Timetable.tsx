@@ -20,12 +20,8 @@ import {
   Maximize2,
   Calendar,
   Layers,
-  BookOpen,
-  Database,
-  Copy,
-  CheckCheck
+  BookOpen
 } from 'lucide-react';
-import { isSupabaseConfigured } from '../lib/supabase';
 import { SchoolClass, Teacher, TimetableCell, TimetableConfig } from '../types';
 import { classesService, teachersService, timetableService } from '../services/supabaseService';
 import { useLanguage } from '../context/LanguageContext';
@@ -100,74 +96,6 @@ export function Timetable() {
 
   // Quick edit cell selection
   const [selectedCellKey, setSelectedCellKey] = useState<string | null>(null);
-
-  // Supabase SQL Modal
-  const [isSqlModalOpen, setIsSqlModalOpen] = useState(false);
-  const [isCopiedSql, setIsCopiedSql] = useState(false);
-
-  const supabaseSqlCode = `-- ========================================================
--- SCHEMA SUPABASE: EMPLOI DU TEMPS (TIMETABLE)
--- SAMY ACADEMY
--- ========================================================
-
--- 1. Création de la table 'timetable_config'
-CREATE TABLE IF NOT EXISTS public.timetable_config (
-    id TEXT PRIMARY KEY,
-    days JSONB NOT NULL DEFAULT '["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"]'::jsonb,
-    time_slots JSONB NOT NULL DEFAULT '["08:00 - 10:00", "10:00 - 12:00", "13:00 - 15:00", "15:00 - 17:00", "17:00 - 19:00", "19:00 - 21:00"]'::jsonb,
-    rooms JSONB NOT NULL DEFAULT '["Salle 1", "Salle 2", "Salle 3", "Salle 4"]'::jsonb,
-    cells JSONB NOT NULL DEFAULT '{}'::jsonb,
-    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now())
-);
-
--- 2. Activation de la sécurité RLS (Row Level Security)
-ALTER TABLE public.timetable_config ENABLE ROW LEVEL SECURITY;
-
--- 3. Suppression préalable des politiques si elles existent déjà (Idempotent)
-DROP POLICY IF EXISTS "Lecture publique timetable_config" ON public.timetable_config;
-DROP POLICY IF EXISTS "Insertion publique timetable_config" ON public.timetable_config;
-DROP POLICY IF EXISTS "Mise à jour publique timetable_config" ON public.timetable_config;
-DROP POLICY IF EXISTS "Suppression publique timetable_config" ON public.timetable_config;
-DROP POLICY IF EXISTS "Acces total timetable_config" ON public.timetable_config;
-
--- 4. Politiques d'accès complètes (Lecture & Écriture)
-CREATE POLICY "Lecture publique timetable_config"
-ON public.timetable_config
-FOR SELECT
-USING (true);
-
-CREATE POLICY "Insertion publique timetable_config"
-ON public.timetable_config
-FOR INSERT
-WITH CHECK (true);
-
-CREATE POLICY "Mise à jour publique timetable_config"
-ON public.timetable_config
-FOR UPDATE
-USING (true)
-WITH CHECK (true);
-
-CREATE POLICY "Suppression publique timetable_config"
-ON public.timetable_config
-FOR DELETE
-USING (true);
-
--- 5. Initialisation du créneau par défaut si la table est vide
-INSERT INTO public.timetable_config (id, days, time_slots, rooms, cells)
-VALUES (
-    'default_timetable',
-    '["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"]'::jsonb,
-    '["08:00 - 10:00", "10:00 - 12:00", "13:00 - 15:00", "15:00 - 17:00", "17:00 - 19:00", "19:00 - 21:00"]'::jsonb,
-    '["Salle 1", "Salle 2", "Salle 3", "Salle 4"]'::jsonb,
-    '{}'::jsonb
-)
-ON CONFLICT (id) DO NOTHING;`;
-
-  const handleCopySql = () => {
-    navigator.clipboard.writeText(supabaseSqlCode);
-    setIsCopiedSql(true);
-    setTimeout(() => setIsCopiedSql(false), 2000);
-  };
 
   useEffect(() => {
     loadAllData();
@@ -457,15 +385,6 @@ ON CONFLICT (id) DO NOTHING;`;
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              onClick={() => setIsSqlModalOpen(true)}
-              className="px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-black text-xs rounded-2xl transition-all flex items-center gap-2 border border-emerald-200 shadow-2xs cursor-pointer active:scale-95"
-              title={tr('عرض كود SQL Supabase', 'Voir le code SQL Supabase', 'View Supabase SQL code')}
-            >
-              <Database size={15} className="text-emerald-600" />
-              <span>SQL Supabase</span>
-            </button>
-
             <button
               onClick={() => setIsAddTimeSlotModalOpen(true)}
               className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs rounded-2xl transition-all flex items-center gap-2 border border-slate-200 shadow-xs"
@@ -1125,67 +1044,6 @@ ON CONFLICT (id) DO NOTHING;`;
         </div>
       )}
 
-      {/* Supabase SQL Schema Modal */}
-      {isSqlModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-7 border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                  <Database size={20} />
-                </div>
-                <div>
-                  <h3 className="text-base font-black text-slate-900">
-                    {tr('كود SQL Supabase — جدول التوقيت', 'Code SQL Supabase — Table Emploi du Temps', 'Supabase SQL Code — Timetable Table')}
-                  </h3>
-                  <p className="text-xs text-slate-500 font-medium">
-                    {tr('قم بتشغيل هذا السكربت في محرر SQL على Supabase.', 'Exécutez ce script dans l\'éditeur SQL de votre console Supabase (SQL Editor).', 'Run this script in the Supabase SQL Editor.')}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsSqlModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-hidden flex flex-col space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-600">
-                <span>{tr('سكربت PostgreSQL / Supabase:', 'Script PostgreSQL / Supabase :', 'PostgreSQL / Supabase Script:')}</span>
-                <button
-                  onClick={handleCopySql}
-                  className={cn(
-                    "px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-2xs active:scale-95",
-                    isCopiedSql 
-                      ? "bg-emerald-600 text-white" 
-                      : "bg-slate-900 hover:bg-slate-800 text-white"
-                  )}
-                >
-                  {isCopiedSql ? <CheckCheck size={14} /> : <Copy size={14} />}
-                  <span>{isCopiedSql ? tr('تم النسخ!', 'Copié !', 'Copied!') : tr('نسخ كود SQL', 'Copier le code SQL', 'Copy SQL Code')}</span>
-                </button>
-              </div>
-
-              <pre dir="ltr" className="flex-1 overflow-auto bg-slate-950 text-emerald-400 p-4 rounded-2xl text-xs font-mono border border-slate-800 leading-relaxed select-all text-left">
-                {supabaseSqlCode}
-              </pre>
-            </div>
-
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
-              <span>{tr('الحالة:', 'Statut :', 'Status:')} {isSupabaseConfigured() ? tr('✓ متصل بـ Supabase', '✓ Supabase connecté', '✓ Supabase connected') : tr('الوضع المحلي نشط', 'Mode local actif (fallback localStorage)', 'Local mode active (localStorage fallback)')}</span>
-              <button
-                type="button"
-                onClick={() => setIsSqlModalOpen(false)}
-                className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition-all"
-              >
-                {tr('إغلاق', 'Fermer', 'Close')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -5,7 +5,6 @@ import {
   Users, 
   UserSquare2, 
   CreditCard, 
-  Receipt,
   Bell, 
   LogOut,
   X,
@@ -77,7 +76,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { icon: GraduationCap, label: t('students'), href: '/students' },
     { icon: UserSquare2, label: t('teachers'), href: '/teachers' },
     { icon: CreditCard, label: t('payments'), href: '/payments' },
-    { icon: Receipt, label: t('expenses'), href: '/expenses' },
     { icon: Bell, label: t('notifications'), href: '/notifications', badge: alertCount },
     { icon: ShieldCheck, label: t('admins_profile'), href: '/admins' },
   ];

@@ -93,18 +93,6 @@ CREATE TABLE IF NOT EXISTS public.attendance_records (
   is_present BOOLEAN NOT NULL DEFAULT true
 );
 
--- F. CREATE expenses TABLE
-CREATE TABLE IF NOT EXISTS public.expenses (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  title TEXT NOT NULL,
-  amount NUMERIC NOT NULL DEFAULT 0,
-  category TEXT NOT NULL DEFAULT 'other',
-  date TEXT NOT NULL,
-  month INTEGER NOT NULL DEFAULT 1,
-  year INTEGER NOT NULL DEFAULT 2026,
-  notes TEXT
-);
-
 -- G. CREATE payments TABLE
 CREATE TABLE IF NOT EXISTS public.payments (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -125,14 +113,6 @@ CREATE TABLE IF NOT EXISTS public.timetable_config (
   time_slots JSONB NOT NULL DEFAULT '["08:00 - 10:00", "10:00 - 12:00", "13:00 - 15:00", "15:00 - 17:00", "17:00 - 19:00", "19:00 - 21:00"]'::jsonb,
   rooms JSONB NOT NULL DEFAULT '["Salle 1", "Salle 2", "Salle 3", "Salle 4"]'::jsonb,
   cells JSONB NOT NULL DEFAULT '{}'::jsonb,
-  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now())
-);
-
--- I. CREATE rent_vault_config TABLE
-CREATE TABLE IF NOT EXISTS public.rent_vault_config (
-  id TEXT PRIMARY KEY,
-  target_annual_rent NUMERIC NOT NULL DEFAULT 180000,
-  deposits JSONB NOT NULL DEFAULT '[]'::jsonb,
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now())
 );
 
@@ -460,10 +440,8 @@ ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.teachers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pointage_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.attendance_records ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.timetable_config ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.rent_vault_config ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow all on classes" ON public.classes;
 CREATE POLICY "Allow all on classes" ON public.classes FOR ALL USING (true) WITH CHECK (true);
@@ -480,17 +458,11 @@ CREATE POLICY "Allow all on pointage_logs" ON public.pointage_logs FOR ALL USING
 DROP POLICY IF EXISTS "Allow all on attendance_records" ON public.attendance_records;
 CREATE POLICY "Allow all on attendance_records" ON public.attendance_records FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Allow all on expenses" ON public.expenses;
-CREATE POLICY "Allow all on expenses" ON public.expenses FOR ALL USING (true) WITH CHECK (true);
-
 DROP POLICY IF EXISTS "Allow all on payments" ON public.payments;
 CREATE POLICY "Allow all on payments" ON public.payments FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow all on timetable_config" ON public.timetable_config;
 CREATE POLICY "Allow all on timetable_config" ON public.timetable_config FOR ALL USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "Allow all on rent_vault_config" ON public.rent_vault_config;
-CREATE POLICY "Allow all on rent_vault_config" ON public.rent_vault_config FOR ALL USING (true) WITH CHECK (true);
 
 ALTER TABLE public.admin ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow all on admin" ON public.admin;
@@ -506,10 +478,8 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.students TO anon, authentic
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.teachers TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.pointage_logs TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.attendance_records TO anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.expenses TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.payments TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.timetable_config TO anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.rent_vault_config TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.admin TO anon, authenticated;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
 
@@ -523,7 +493,6 @@ CREATE INDEX IF NOT EXISTS idx_students_class_id ON public.students(class_id);
 CREATE INDEX IF NOT EXISTS idx_students_class_id_camel ON public.students("classId");
 CREATE INDEX IF NOT EXISTS idx_teachers_payment_status ON public.teachers(payment_status);
 CREATE INDEX IF NOT EXISTS idx_pointage_logs_tokenId ON public.pointage_logs("tokenId");
-CREATE INDEX IF NOT EXISTS idx_expenses_date ON public.expenses(date);
 CREATE INDEX IF NOT EXISTS idx_payments_student_id ON public.payments(student_id);
 
 

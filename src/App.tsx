@@ -9,7 +9,6 @@ import { Classes } from './pages/Classes';
 import { Teachers } from './pages/Teachers';
 import { Students } from './pages/Students';
 import { Payments } from './pages/Payments';
-import { Expenses } from './pages/Expenses';
 import { Notifications } from './pages/Notifications';
 import { Timetable } from './pages/Timetable';
 import { AdminProfiles } from './pages/AdminProfiles';
@@ -66,7 +65,6 @@ export default function App() {
               <Route path="students" element={<Students />} />
               <Route path="teachers" element={<Teachers />} />
               <Route path="payments" element={<Payments />} /> 
-              <Route path="expenses" element={<Expenses />} /> 
               <Route path="notifications" element={<Notifications />} />
               <Route path="admins" element={<AdminProfiles />} />
               <Route path="pointage" element={<PointageTerminal />} />
