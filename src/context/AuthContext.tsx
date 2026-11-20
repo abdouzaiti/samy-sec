@@ -25,12 +25,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const savedUser = JSON.parse(savedUserStr);
         if (savedUser && (savedUser.role === 'director' || savedUser.role === 'secretary')) {
-          const normalizedUser: User = savedUser.uid === '1' && savedUser.displayName === 'Directeur Mohamed'
-            ? { ...savedUser, email: 'director@samyacademy.dz', displayName: 'Director' }
-            : savedUser;
-          setUser(normalizedUser);
-          setActiveRole(normalizedUser.role);
-          localStorage.setItem('user', JSON.stringify(normalizedUser));
+          setUser(savedUser);
+          setActiveRole(savedUser.role);
         } else {
           localStorage.removeItem('user');
         }

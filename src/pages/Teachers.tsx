@@ -3,14 +3,12 @@ import { Search, Plus, Calendar, DollarSign, Briefcase, Banknote, Loader2, Trash
 import { Teacher, PointageLog, SchoolClass, Student, PaymentStatus } from '../types';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../context/LanguageContext';
-import { useAuth } from '../context/AuthContext';
 import { classesService, studentsService, pointageService, teachersService } from '../services/supabaseService';
 import { Modal } from '../components/Modal';
 
 export function Teachers() {
   const { t, tr, isRTL, language } = useLanguage();
   const dateLocale = language === 'ar' ? 'ar-DZ' : language === 'fr' ? 'fr-FR' : 'en-GB';
-  const { activeRole } = useAuth();
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -206,20 +204,13 @@ export function Teachers() {
           <h1 className="text-3xl font-bold text-primary tracking-tight">{t('teachers')}</h1>
           <p className="text-slate-500 mt-1">{t('staff_management')}</p>
         </div>
-        {activeRole === 'director' ? (
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="w-full md:w-auto bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl text-sm font-semibold shadow-lg shadow-primary/10 transition-all flex items-center justify-center gap-2"
-          >
-            <Plus size={18} />
-            {tr('إضافة أستاذ', 'Ajouter un enseignant', 'Add Teacher')}
-          </button>
-        ) : (
-          <div className="flex items-center gap-2 text-xs font-black text-slate-400 bg-slate-50 border border-slate-100 px-4 py-3 rounded-2xl">
-            <AlertCircle size={15} className="text-amber-500" />
-            <span>{tr('إضافة الأساتذة مخصصة للمدير فقط', 'La création d\'enseignants est réservée au directeur', 'Creating teachers is reserved for the Director')}</span>
-          </div>
-        )}
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="w-full md:w-auto bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl text-sm font-semibold shadow-lg shadow-primary/10 transition-all flex items-center justify-center gap-2"
+        >
+          <Plus size={18} />
+          {tr('إضافة أستاذ', 'Ajouter un enseignant', 'Add Teacher')}
+        </button>
       </header>
 
       <div className={cn("grid grid-cols-1", isRTL && "lg:flex lg:flex-row-reverse")}>
@@ -286,11 +277,7 @@ export function Teachers() {
                       </div>
                     </td>
                     <td className="px-8 py-6 text-center text-base text-primary font-black tracking-tight">
-                      {activeRole === 'director' ? (
-                        `${calculateSalary(teacher.id).toLocaleString()} ${t('currency')}`
-                      ) : (
-                        <span className="text-slate-400 select-none text-[11px] font-black tracking-widest bg-slate-50 border border-slate-100/50 px-2 py-1 rounded-md" title={tr('خاص بالمدير', 'Confidentiel Directeur', 'Director Confidential')}>•••••• {t('currency')}</span>
-                      )}
+                      {`${calculateSalary(teacher.id).toLocaleString()} ${t('currency')}`}
                     </td>
                     <td className="px-8 py-6 text-center">
                       <div className="relative inline-block text-left">
@@ -425,50 +412,41 @@ export function Teachers() {
                          >
                            <FileText size={18} />
                          </button>
-                         {activeRole === 'director' ? (
-                           <>
-                             <button 
-                               onClick={() => handlePaySalary(teacher)}
-                               className="bg-slate-50 hover:bg-slate-100 text-slate-600 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30 active:scale-95" 
-                               disabled={(teacher.paidMonths || []).includes(teacher.currentMonth || 1) || (teacher.paymentStatus === 'Paid' && (!teacher.paidMonths || teacher.paidMonths.length === 0))}
-                             >
-                               {t('pay_salary')}
-                             </button>
-                             <button
-                               onClick={() => {
-                                 setEditingTeacherId(teacher.id);
-                                 setEditTeacher({
-                                   name: teacher.name,
-                                   email: teacher.email,
-                                   phone: teacher.phone || '',
-                                   secondaryPhone: teacher.secondaryPhone || '',
-                                   birthDate: teacher.birthDate || '',
-                                   address: teacher.address || '',
-                                   subject: teacher.subject,
-                                   salary: teacher.salary,
-                                   paymentStatus: teacher.paymentStatus,
-                                   tokenId: teacher.tokenId || ''
-                                 });
-                                 setIsEditModalOpen(true);
-                               }}
-                               className="p-2 text-slate-300 hover:text-accent transition-colors"
-                               title={tr('تعديل الأستاذ', 'Modifier l\'enseignant', 'Edit teacher')}
-                             >
-                               <Pencil size={15} />
-                             </button>
-                             <button 
-                               onClick={() => handleDeleteTeacher(teacher.id)}
-                               className="p-2 text-slate-300 hover:text-rose-500 transition-colors"
-                             >
-                               <Trash2 size={16} />
-                             </button>
-                           </>
-                        ) : (
-                          <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-slate-400 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-xl">
-                            <Shield size={12} className="text-amber-500" />
-                            <span>{tr('للقراءة فقط', 'Lecture seule', 'Read only')}</span>
-                          </div>
-                        )}
+                         <button 
+                           onClick={() => handlePaySalary(teacher)}
+                           className="bg-slate-50 hover:bg-slate-100 text-slate-600 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30 active:scale-95" 
+                           disabled={(teacher.paidMonths || []).includes(teacher.currentMonth || 1) || (teacher.paymentStatus === 'Paid' && (!teacher.paidMonths || teacher.paidMonths.length === 0))}
+                         >
+                           {t('pay_salary')}
+                         </button>
+                         <button
+                           onClick={() => {
+                             setEditingTeacherId(teacher.id);
+                             setEditTeacher({
+                               name: teacher.name,
+                               email: teacher.email,
+                               phone: teacher.phone || '',
+                               secondaryPhone: teacher.secondaryPhone || '',
+                               birthDate: teacher.birthDate || '',
+                               address: teacher.address || '',
+                               subject: teacher.subject,
+                               salary: teacher.salary,
+                               paymentStatus: teacher.paymentStatus,
+                               tokenId: teacher.tokenId || ''
+                             });
+                             setIsEditModalOpen(true);
+                           }}
+                           className="p-2 text-slate-300 hover:text-accent transition-colors"
+                           title={tr('تعديل الأستاذ', 'Modifier l\'enseignant', 'Edit teacher')}
+                         >
+                           <Pencil size={15} />
+                         </button>
+                         <button 
+                           onClick={() => handleDeleteTeacher(teacher.id)}
+                           className="p-2 text-slate-300 hover:text-rose-500 transition-colors"
+                         >
+                           <Trash2 size={16} />
+                         </button>
                       </div>
                     </td>
                   </tr>

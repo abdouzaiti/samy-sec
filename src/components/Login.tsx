@@ -82,7 +82,7 @@ export function Login() {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="director"
+                placeholder={tr('اسم المستخدم', "Nom d'utilisateur", 'Username')}
                 className={cn(
                   "w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all font-bold",
                    isRTL && "text-right"

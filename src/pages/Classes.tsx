@@ -3,7 +3,6 @@ import { Search, Plus, Phone, CheckCircle2, XCircle, Clock, BookOpen, Users, Loa
 import { Student, SchoolClass, Teacher } from '../types';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../context/LanguageContext';
-import { useAuth } from '../context/AuthContext';
 import { classesService, studentsService, pointageService, teachersService, paymentsService } from '../services/supabaseService';
 import { isSupabaseConfigured, getSupabase } from '../lib/supabase';
 import { Modal } from '../components/Modal';
@@ -59,7 +58,6 @@ const getStudentAttendanceDates = (s: Student, classId: string, month: number): 
 export function Classes() {
   const { t, tr, isRTL, language } = useLanguage();
   const dateLocale = language === 'ar' ? 'ar-DZ' : language === 'fr' ? 'fr-FR' : 'en-GB';
-  const { activeRole } = useAuth();
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -771,20 +769,13 @@ export function Classes() {
           <h1 className="text-3xl font-bold text-primary tracking-tight">{t('academic_classes')}</h1>
           <p className="text-slate-500 mt-1">{t('manage_rosters')}</p>
         </div>
-        {activeRole === 'director' ? (
-          <button 
-            onClick={() => setIsClassModalOpen(true)}
-            className="w-full md:w-auto bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl text-sm font-semibold shadow-lg shadow-primary/10 transition-all flex items-center justify-center gap-2"
-          >
-            <Plus size={18} />
-            {t('create_class')}
-          </button>
-        ) : (
-          <div className="flex items-center gap-2 text-xs font-black text-slate-400 bg-slate-50 border border-slate-100 px-4 py-3 rounded-2xl">
-            <AlertCircle size={15} className="text-amber-500" />
-            <span>{tr('إنشاء الأقسام مخصص للمدير فقط', 'Création réservée au Directeur', 'Class creation reserved for Director')}</span>
-          </div>
-        )}
+        <button 
+          onClick={() => setIsClassModalOpen(true)}
+          className="w-full md:w-auto bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl text-sm font-semibold shadow-lg shadow-primary/10 transition-all flex items-center justify-center gap-2"
+        >
+          <Plus size={18} />
+          {t('create_class')}
+        </button>
       </header>
 
       <div className={cn("grid grid-cols-1 lg:grid-cols-12 gap-10 pt-8 border-t border-slate-100", isRTL && "lg:flex lg:flex-row-reverse")}>

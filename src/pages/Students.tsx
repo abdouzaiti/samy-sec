@@ -3,7 +3,6 @@ import { Search, Plus, User, Phone, CreditCard, GraduationCap, Loader2, Trash2, 
 import { Student, SchoolClass, PointageLog } from '../types';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../context/LanguageContext';
-import { useAuth } from '../context/AuthContext';
 import { studentsService, classesService, pointageService } from '../services/supabaseService';
 import { isSupabaseConfigured, getSupabase } from '../lib/supabase';
 import { Modal } from '../components/Modal';
@@ -12,7 +11,6 @@ import { motion } from 'motion/react';
 export function Students() {
   const { t, tr, isRTL, language } = useLanguage();
   const dateLocale = language === 'ar' ? 'ar-DZ' : language === 'fr' ? 'fr-FR' : 'en-GB';
-  const { activeRole } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [allLogs, setAllLogs] = useState<PointageLog[]>([]);
@@ -280,15 +278,13 @@ export function Students() {
           </p>
         </div>
 
-        {activeRole === 'director' && (
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center justify-center gap-2 bg-primary text-white px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-primary/90 transition-all hover:shadow-xl hover:shadow-primary/20 active:scale-95 group"
-          >
-            <Plus size={16} className="group-hover:rotate-90 transition-transform duration-300" />
-            {t('add_student')}
-          </button>
-        )}
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center justify-center gap-2 bg-primary text-white px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-primary/90 transition-all hover:shadow-xl hover:shadow-primary/20 active:scale-95 group"
+        >
+          <Plus size={16} className="group-hover:rotate-90 transition-transform duration-300" />
+          {t('add_student')}
+        </button>
       </div>
 
       {/* Stats and Search */}
@@ -412,27 +408,23 @@ export function Students() {
                           >
                              <FileText size={18} />
                           </button>
-                          {activeRole === 'director' && (
-                            <>
-                              <button 
-                                onClick={() => {
-                                  setSelectedStudent(student);
-                                  setIsEditModalOpen(true);
-                                }}
-                                className="p-2 text-slate-300 hover:text-primary hover:bg-primary/5 rounded-xl transition-all"
-                                title={tr('تعديل', 'Modifier', 'Edit')}
-                              >
-                                <Pencil size={18} />
-                              </button>
-                              <button 
-                                onClick={() => handleDeleteStudent(student.id)}
-                                className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                                title={t('remove')}
-                              >
-                                <Trash2 size={18} />
-                              </button>
-                            </>
-                          )}
+                          <button 
+                            onClick={() => {
+                              setSelectedStudent(student);
+                              setIsEditModalOpen(true);
+                            }}
+                            className="p-2 text-slate-300 hover:text-primary hover:bg-primary/5 rounded-xl transition-all"
+                            title={tr('تعديل', 'Modifier', 'Edit')}
+                          >
+                            <Pencil size={18} />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteStudent(student.id)}
+                            className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                            title={t('remove')}
+                          >
+                            <Trash2 size={18} />
+                          </button>
                         </div>
                       </td>
                     </motion.tr>

@@ -526,8 +526,3 @@ INSERT INTO public.students (id, name, parent_phone, payment_status, class_id, c
 ('student-8', 'Khadidja Haddad', '0663152436', 'Paid', 'class-3', '["class-3"]'::jsonb, 'S108', 1, '[1]'::jsonb),
 ('student-9', 'Oussama Sifi', '0792345678', 'Unpaid', 'class-5', '["class-5"]'::jsonb, 'S109', 1, '[1]'::jsonb)
 ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO public.admin (id, username, password, display_name, email, phone, role, is_active, created_at) VALUES
-('1', 'director', 'mostarunclub', 'Director', 'director@samyacademy.dz', '', 'director', true, '2026-01-01T00:00:00.000Z'),
-('2', 'secretary', 'samy123', 'Secrétariat Samy Academy', 'secretary@samyacademy.dz', '', 'secretary', true, '2026-01-01T00:00:00.000Z')
-ON CONFLICT (id) DO NOTHING;

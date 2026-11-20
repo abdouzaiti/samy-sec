@@ -32,7 +32,7 @@ export function AdminProfiles() {
   const { user, updateSessionUser } = useAuth();
   const { language, tr, isRTL } = useLanguage();
   const dateLocale = language === 'ar' ? 'ar-DZ' : language === 'fr' ? 'fr-FR' : 'en-GB';
-  const isDirector = user?.role === 'director';
+  const isDirector = Boolean(user);
 
   const [accounts, setAccounts] = useState<AdminAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +49,7 @@ export function AdminProfiles() {
     password: '',
     email: '',
     phone: '',
+    role: 'secretary' as 'director' | 'secretary',
     notes: ''
   });
   const [showNewPassword, setShowNewPassword] = useState(true);
@@ -99,10 +100,7 @@ CREATE POLICY "Allow all on admin" ON public.admin FOR ALL USING (true) WITH CHE
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.admin TO anon, authenticated;
 
-INSERT INTO public.admin (id, username, password, display_name, email, phone, role, is_active, created_at) VALUES
-('1', 'director', 'mostarunclub', 'Director', 'director@samyacademy.dz', '', 'director', true, '2026-01-01T00:00:00.000Z'),
-('2', 'secretary', 'samy123', 'Secrétariat Samy Academy', 'secretary@samyacademy.dz', '', 'secretary', true, '2026-01-01T00:00:00.000Z')
-ON CONFLICT (id) DO NOTHING;`;
+NOTIFY pgrst, 'reload schema';`;
 
   const loadAccounts = async () => {
     setLoading(true);
@@ -170,9 +168,7 @@ ON CONFLICT (id) DO NOTHING;`;
   const activeSecretariesCount = secretaryAccounts.filter(a => a.isActive).length;
 
   const getLocalizedName = (acc: AdminAccount) => {
-    if (acc.displayName === 'Director') return tr('المدير', 'Directeur', 'Director');
-    if (acc.displayName === 'Secrétariat Samy Academy') return tr('أمانة أكاديمية سامي', 'Secrétariat Samy Academy', 'Samy Academy Secretariat');
-    return acc.displayName;
+    return acc.displayName || acc.username;
   };
 
   const generateRandomPassword = () => {
@@ -216,7 +212,7 @@ ON CONFLICT (id) DO NOTHING;`;
         password: newSecretary.password.trim(),
         email: newSecretary.email.trim() || `${cleanUsername}@samyacademy.dz`,
         phone: newSecretary.phone.trim(),
-        role: 'secretary',
+        role: newSecretary.role,
         isActive: true,
         notes: newSecretary.notes.trim()
       });
@@ -228,6 +224,7 @@ ON CONFLICT (id) DO NOTHING;`;
         password: '',
         email: '',
         phone: '',
+        role: 'secretary',
         notes: ''
       });
     } catch (err: any) {
@@ -336,7 +333,7 @@ ON CONFLICT (id) DO NOTHING;`;
   };
 
   const handleToggleActive = async (acc: AdminAccount) => {
-    if (!isDirector || acc.role === 'director' || acc.id === user?.uid) return;
+    if (!isDirector || acc.id === user?.uid) return;
     try {
       const updated = await adminAccountsService.update(acc.id, { isActive: !acc.isActive });
       setAccounts(prev => prev.map(a => (a.id === updated.id ? updated : a)));
@@ -346,12 +343,12 @@ ON CONFLICT (id) DO NOTHING;`;
   };
 
   const handleDeleteAccount = async (acc: AdminAccount) => {
-    if (!isDirector || acc.role === 'director' || acc.id === user?.uid) return;
+    if (!isDirector || acc.id === user?.uid) return;
     const confirmed = window.confirm(
       tr(
-        `هل أنت متأكد من حذف حساب السكرتير "${getLocalizedName(acc)}" (@${acc.username})؟`,
-        `Voulez-vous vraiment supprimer le compte secrétaire "${getLocalizedName(acc)}" (@${acc.username}) ?`,
-        `Are you sure you want to delete secretary account "${getLocalizedName(acc)}" (@${acc.username})?`
+        `هل أنت متأكد من حذف الحساب "${getLocalizedName(acc)}" (@${acc.username})؟`,
+        `Voulez-vous vraiment supprimer le compte "${getLocalizedName(acc)}" (@${acc.username}) ?`,
+        `Are you sure you want to delete account "${getLocalizedName(acc)}" (@${acc.username})?`
       )
     );
     if (!confirmed) return;
@@ -388,34 +385,15 @@ ON CONFLICT (id) DO NOTHING;`;
             {tr('ملفات الإدارة والسكرتارية', 'Profils Admins & Secrétariat', 'Admin & Secretary Profiles')}
           </h1>
           <p className="text-slate-500 mt-1 font-medium">
-            {isDirector
-              ? tr(
-                  'إدارة ملف المدير وإضافة أو تعديل حسابات السكرتارية للدخول إلى المنصة.',
-                  'Gérez le profil du Directeur et créez ou modifiez les comptes secrétaires.',
-                  'Manage the Director profile and create or manage Secretary login accounts.'
-                )
-              : tr(
-                  'عرض ملفات الإدارة والسكرتارية وتحديث بيانات حسابك الشخصي.',
-                  'Consultez les profils de la direction et du secrétariat et modifiez votre profil.',
-                  'View administration & secretary profiles and update your personal account info.'
-                )}
+            {tr(
+              'إدارة ملف المدير وإضافة أو تعديل حسابات السكرتارية للدخول إلى المنصة.',
+              'Gérez le profil du Directeur et créez ou modifiez les comptes secrétaires.',
+              'Manage the Director profile and create or manage Secretary login accounts.'
+            )}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {!isDirector && (
-            <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs font-bold">
-              <Lock size={15} className="shrink-0" />
-              <span>
-                {tr(
-                  'إضافة أو حذف السكرتارية متاح للمدير فقط',
-                  'Ajout/suppression réservés au Directeur',
-                  'Adding/removing secretaries is Director-only'
-                )}
-              </span>
-            </div>
-          )}
-
           {isDirector && (
             <>
               <button
@@ -449,7 +427,7 @@ ON CONFLICT (id) DO NOTHING;`;
                 className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-5 py-3 rounded-2xl font-black text-xs sm:text-sm shadow-xl shadow-primary/15 transition-all active:scale-95 cursor-pointer"
               >
                 <UserPlus size={18} />
-                <span>{tr('إضافة حساب سكرتير', 'Ajouter un Secrétaire', 'Add Secretary Account')}</span>
+                <span>{tr('إضافة حساب جديد', 'Ajouter un compte', 'Add Account')}</span>
               </button>
             </>
           )}
@@ -526,6 +504,14 @@ ON CONFLICT (id) DO NOTHING;`;
           </h2>
         </div>
 
+        {directorAccounts.length === 0 ? (
+          <div className="bg-white rounded-3xl border border-slate-100 p-10 text-center space-y-2">
+            <ShieldCheck size={36} className="mx-auto text-slate-300" />
+            <p className="text-slate-500 font-bold text-sm">
+              {tr('لا توجد حسابات مديرين مسجلة في Supabase بعد', 'Aucun compte directeur enregistré dans Supabase', 'No director accounts found in Supabase yet')}
+            </p>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {directorAccounts.map(acc => {
             const isOwnProfile = user?.uid === acc.id;
@@ -562,21 +548,33 @@ ON CONFLICT (id) DO NOTHING;`;
                     </div>
 
                     {isDirector && (
-                      <button
-                        type="button"
-                        onClick={() => openEditModal(acc)}
-                        className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all cursor-pointer shrink-0"
-                        title={tr('تعديل ملف المدير', 'Modifier le profil', 'Edit profile')}
-                      >
-                        <Pencil size={16} />
-                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(acc)}
+                          className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all cursor-pointer shrink-0"
+                          title={tr('تعديل ملف المدير', 'Modifier le profil', 'Edit profile')}
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        {acc.id !== user?.uid && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteAccount(acc)}
+                            className="p-2.5 bg-white/10 hover:bg-rose-500/80 text-white rounded-xl transition-all cursor-pointer shrink-0"
+                            title={tr('حذف الحساب', 'Supprimer le compte', 'Delete account')}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-medium text-blue-100 bg-white/5 p-4 rounded-2xl border border-white/10">
                     <div className="flex items-center gap-2 truncate">
                       <Mail size={14} className="text-amber-300 shrink-0" />
-                      <span className="truncate" dir="ltr">{acc.email || 'director@samyacademy.dz'}</span>
+                      <span className="truncate" dir="ltr">{acc.email || '—'}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Phone size={14} className="text-amber-300 shrink-0" />
@@ -617,6 +615,7 @@ ON CONFLICT (id) DO NOTHING;`;
             );
           })}
         </div>
+        )}
       </section>
 
       {/* Secretaries Section */}
@@ -794,11 +793,11 @@ ON CONFLICT (id) DO NOTHING;`;
         )}
       </section>
 
-      {/* Add Secretary Account Modal (Director Only) */}
+      {/* Add Account Modal */}
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        title={tr('إضافة حساب سكرتير جديد', 'Créer un compte Secrétaire', 'Create Secretary Account')}
+        title={tr('إضافة حساب جديد', 'Créer un compte', 'Create Account')}
       >
         <form onSubmit={handleCreateSecretary} className="space-y-4">
           {addError && (
@@ -809,7 +808,39 @@ ON CONFLICT (id) DO NOTHING;`;
 
           <div className="space-y-1">
             <label className="text-xs font-black uppercase tracking-wider text-slate-500">
-              {tr('الاسم الكامل للسكرتير', 'Nom complet du secrétaire', 'Secretary Full Name')} *
+              {tr('الدور', 'Rôle', 'Role')} *
+            </label>
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => setNewSecretary({ ...newSecretary, role: 'director' })}
+                className={cn(
+                  "p-3 rounded-2xl text-xs font-black border transition-all cursor-pointer",
+                  newSecretary.role === 'director'
+                    ? "bg-amber-50 border-accent text-primary shadow-xs"
+                    : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
+                )}
+              >
+                {tr('المدير', 'Directeur', 'Director')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setNewSecretary({ ...newSecretary, role: 'secretary' })}
+                className={cn(
+                  "p-3 rounded-2xl text-xs font-black border transition-all cursor-pointer",
+                  newSecretary.role === 'secretary'
+                    ? "bg-primary/10 border-primary text-primary shadow-xs"
+                    : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
+                )}
+              >
+                {tr('سكرتير', 'Secrétaire', 'Secretary')}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-black uppercase tracking-wider text-slate-500">
+              {tr('الاسم الكامل', 'Nom complet', 'Full Name')} *
             </label>
             <input
               type="text"
@@ -920,7 +951,7 @@ ON CONFLICT (id) DO NOTHING;`;
             className="w-full bg-primary hover:bg-primary/90 disabled:opacity-60 text-white p-4 rounded-2xl font-black shadow-xl shadow-primary/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             {isSubmittingAdd ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={18} />}
-            <span>{tr('إنشاء حساب السكرتير', 'Créer le compte Secrétaire', 'Create Secretary Account')}</span>
+            <span>{tr('إنشاء الحساب', 'Créer le compte', 'Create Account')}</span>
           </button>
         </form>
       </Modal>
