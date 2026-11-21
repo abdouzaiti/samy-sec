@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   CalendarDays, 
   Plus, 
@@ -283,17 +284,19 @@ export function Timetable() {
   };
 
   useEffect(() => {
+    document.body.classList.add('timetable-print-active');
     const style = document.createElement('style');
     style.id = 'timetable-print-page-style';
-    style.media = 'print';
-    style.textContent = '@page { size: A4 landscape; margin: 8mm; }';
+    style.textContent = '@media print { @page { size: A4 landscape; margin: 8mm; } }';
     document.head.appendChild(style);
     return () => {
+      document.body.classList.remove('timetable-print-active');
       style.remove();
     };
   }, []);
 
   const handlePrint = () => {
+    document.body.classList.add('timetable-print-active');
     window.print();
   };
 
@@ -488,44 +491,25 @@ export function Timetable() {
       </div>
 
       {/* Main Interactive Excel-Style Timetable Grid */}
-      <div
-        id="print-timetable-section"
-        dir={isRTL ? 'rtl' : 'ltr'}
-        className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden print:rounded-2xl print:border-slate-300 print:overflow-visible"
-      >
-        {/* Printable Official Header (Visible on print only) */}
-        <div className="hidden print:flex items-center justify-between px-5 py-3.5 border-b-2 border-primary bg-white">
-          <div className="flex items-center gap-3.5">
-            <img src="/logo.png" alt="Samy Academy Logo" className="h-12 w-auto object-contain" />
-            <div>
-              <h1 className="text-lg font-black uppercase tracking-wide text-primary">{tr('جدول التوقيت الأسبوعي', 'Emploi du Temps Hebdomadaire', 'Weekly Timetable')}</h1>
-              <p className="text-[11px] font-bold text-accent">{tr('أكاديمية سامي — السنة الدراسية 2025 / 2026', 'Samy Academy — Année Académique 2025 / 2026', 'Samy Academy — Academic Year 2025 / 2026')}</p>
-            </div>
-          </div>
-          <div className={cn("text-[11px] font-bold text-slate-600", isRTL ? "text-left" : "text-right")}>
-            <p>{tr('تاريخ الإصدار:', 'Édition du:', 'Issued on:')} {new Date().toLocaleDateString(dateLocale)}</p>
-            <p className="text-[10px] text-slate-400">{tr('الجدول الرسمي للدروس والحصص', 'Planning officiel des cours & séances', 'Official courses & sessions schedule')}</p>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto w-full print:overflow-visible">
-          <table className="w-full border-collapse min-w-[900px] print:min-w-0 print:w-full print:table-fixed">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full border-collapse min-w-[900px]">
             {/* Table Header: Days of the week */}
             <thead>
               <tr className="bg-primary text-white divide-x divide-white/10 border-b border-primary">
                 {/* Time slot column title */}
-                <th className={cn("p-3.5 text-center text-xs font-black uppercase tracking-wider w-36 bg-[#09214D] sticky z-20 print:static print:w-28 print:p-2 print:text-[10px]", isRTL ? "right-0" : "left-0")}>
+                <th className={cn("p-3.5 text-center text-xs font-black uppercase tracking-wider w-36 bg-[#09214D] sticky z-20", isRTL ? "right-0" : "left-0")}>
                   <div className="flex items-center justify-center gap-1.5 text-amber-300">
-                    <Clock size={14} className="print:w-3 print:h-3" />
+                    <Clock size={14} />
                     <span>{tr('التوقيت', 'Créneaux', 'Time Slots')}</span>
                   </div>
                 </th>
 
                 {/* Day Columns */}
                 {config.days.map((day) => (
-                  <th key={day} className="p-3.5 text-center text-xs font-black uppercase tracking-wider min-w-[150px] print:min-w-0 print:p-2 print:text-[10px]">
+                  <th key={day} className="p-3.5 text-center text-xs font-black uppercase tracking-wider min-w-[150px]">
                     <div className="flex items-center justify-center gap-1.5">
-                      <Calendar size={13} className="text-accent print:w-3 print:h-3" />
+                      <Calendar size={13} className="text-accent" />
                       <span>{formatDay(day)}</span>
                     </div>
                   </th>
@@ -538,16 +522,16 @@ export function Timetable() {
               {config.timeSlots.map((timeSlot) => (
                 <tr key={timeSlot} className="hover:bg-slate-50/50 transition-colors divide-x divide-slate-200 group/row">
                   {/* Sticky Time Slot Pill with delete button */}
-                  <td className={cn("p-3 bg-slate-50 font-mono text-xs font-black text-slate-700 text-center sticky z-10 border-slate-300 shadow-xs print:static print:p-1.5 print:text-[10px] print:shadow-none", isRTL ? "right-0 border-l" : "left-0 border-r")}>
+                  <td className={cn("p-3 bg-slate-50 font-mono text-xs font-black text-slate-700 text-center sticky z-10 border-slate-300 shadow-xs", isRTL ? "right-0 border-l" : "left-0 border-r")}>
                     <div className="flex flex-col items-center justify-center gap-1 group/ts relative">
-                      <span dir="ltr" className="bg-white px-2.5 py-1 rounded-xl border border-slate-200 shadow-2xs print:px-1.5 print:py-0.5 print:rounded-lg print:shadow-none">
+                      <span dir="ltr" className="bg-white px-2.5 py-1 rounded-xl border border-slate-200 shadow-2xs">
                         {timeSlot}
                       </span>
                       {config.timeSlots.length > 2 && (
                         <button
                           onClick={() => handleRemoveTimeSlot(timeSlot)}
                           title={tr('حذف هذا التوقيت', 'Supprimer ce créneau', 'Delete this time slot')}
-                          className="opacity-0 group-hover/ts:opacity-100 transition-opacity text-rose-500 hover:text-rose-700 text-[10px] flex items-center gap-1 pt-0.5 print:hidden"
+                          className="opacity-0 group-hover/ts:opacity-100 transition-opacity text-rose-500 hover:text-rose-700 text-[10px] flex items-center gap-1 pt-0.5"
                         >
                           <Trash2 size={11} />
                         </button>
@@ -571,9 +555,9 @@ export function Timetable() {
                           handleOpenEditModal(day, timeSlot);
                         }}
                         className={cn(
-                          "p-2.5 align-top transition-all cursor-pointer relative min-h-[90px] h-[95px] print:p-1 print:h-auto print:min-h-[62px]",
+                          "p-2.5 align-top transition-all cursor-pointer relative min-h-[90px] h-[95px]",
                           !isMatched && "opacity-30 grayscale",
-                          isSelected && "ring-2 ring-primary ring-inset z-10 print:ring-0",
+                          isSelected && "ring-2 ring-primary ring-inset z-10",
                           !hasContent && "hover:bg-slate-100/70 border-dashed"
                         )}
                       >
@@ -581,18 +565,18 @@ export function Timetable() {
                           <div 
                             style={{ [isRTL ? 'borderRightColor' : 'borderLeftColor']: cell.color || '#2563eb' }}
                             className={cn(
-                              "h-full w-full rounded-xl bg-white border border-slate-200/80 p-2.5 flex flex-col justify-between shadow-2xs hover:shadow-md transition-all group/card relative print:p-1.5 print:rounded-lg print:shadow-none print:border-slate-300",
+                              "h-full w-full rounded-xl bg-white border border-slate-200/80 p-2.5 flex flex-col justify-between shadow-2xs hover:shadow-md transition-all group/card relative",
                               isRTL ? "border-r-4" : "border-l-4"
                             )}
                           >
                             <div>
                               {/* Top Bar: Subject & Room */}
-                              <div className="flex items-center justify-between gap-1 mb-1 print:mb-0.5">
-                                <span className="font-black text-[11px] text-slate-900 truncate leading-snug print:text-[9.5px] print:whitespace-normal">
+                              <div className="flex items-center justify-between gap-1 mb-1">
+                                <span className="font-black text-[11px] text-slate-900 truncate leading-snug">
                                   {cell.subject || cell.className}
                                 </span>
                                 {cell.room && (
-                                  <span className="text-[9px] font-extrabold px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded-md shrink-0 border border-slate-200 print:text-[8px] print:px-1 print:py-0">
+                                  <span className="text-[9px] font-extrabold px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded-md shrink-0 border border-slate-200">
                                     {formatRoom(cell.room)}
                                   </span>
                                 )}
@@ -600,15 +584,15 @@ export function Timetable() {
 
                               {/* Class Name (if different from subject) */}
                               {cell.className && cell.className !== cell.subject && (
-                                <p className="text-[10px] font-bold text-slate-600 truncate mb-1 print:text-[8.5px] print:mb-0.5 print:whitespace-normal">
+                                <p className="text-[10px] font-bold text-slate-600 truncate mb-1">
                                   {cell.className}
                                 </p>
                               )}
 
                               {/* Teacher Name */}
                               {cell.teacherName && (
-                                <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-500 truncate print:text-[8.5px]">
-                                  <GraduationCap size={12} className="text-primary shrink-0 print:w-2.5 print:h-2.5" />
+                                <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-500 truncate">
+                                  <GraduationCap size={12} className="text-primary shrink-0" />
                                   <span className="truncate">{cell.teacherName}</span>
                                 </div>
                               )}
@@ -616,13 +600,13 @@ export function Timetable() {
 
                             {/* Note / Tag */}
                             {cell.note && (
-                              <div className="mt-1 pt-1 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-400 print:mt-0.5 print:pt-0.5 print:text-[8px]">
+                              <div className="mt-1 pt-1 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-400">
                                 <span className="italic truncate">{cell.note}</span>
                               </div>
                             )}
 
                             {/* Quick Action Overlay on Hover */}
-                            <div className={cn("absolute top-1 opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center gap-1 bg-white/90 backdrop-blur-xs p-1 rounded-lg border border-slate-200 print:hidden", isRTL ? "left-1" : "right-1")}>
+                            <div className={cn("absolute top-1 opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center gap-1 bg-white/90 backdrop-blur-xs p-1 rounded-lg border border-slate-200", isRTL ? "left-1" : "right-1")}>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -646,9 +630,9 @@ export function Timetable() {
                             </div>
                           </div>
                         ) : (
-                          <div className="h-full w-full rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300 hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all p-2 group/empty print:border-slate-200/70 print:rounded-lg">
-                            <Plus size={16} className="transition-transform group-hover/empty:scale-125 print:hidden" />
-                            <span className="text-[10px] font-bold mt-1 opacity-0 group-hover/empty:opacity-100 transition-opacity print:hidden">
+                          <div className="h-full w-full rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300 hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all p-2 group/empty">
+                            <Plus size={16} className="transition-transform group-hover/empty:scale-125" />
+                            <span className="text-[10px] font-bold mt-1 opacity-0 group-hover/empty:opacity-100 transition-opacity">
                               {tr('إضافة', 'Ajouter', 'Add')}
                             </span>
                           </div>
@@ -1059,6 +1043,151 @@ export function Timetable() {
         </div>
       )}
 
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            id="timetable-print-root"
+            dir={isRTL ? 'rtl' : 'ltr'}
+            className="hidden print:block bg-white text-slate-900 font-sans w-full"
+          >
+            <div className="bg-white rounded-2xl border border-slate-300 overflow-hidden">
+              {/* Official Samy Academy Print Header */}
+              <div className="flex items-center justify-between px-5 py-3 border-b-2 border-[#0B285C] bg-white">
+                <div className="flex items-center gap-3.5">
+                  <img src="/logo.png" alt="Samy Academy Logo" className="h-11 w-auto object-contain" />
+                  <div>
+                    <h1 className="text-base font-black uppercase tracking-wide text-[#0B285C]">
+                      {tr('جدول التوقيت الأسبوعي', 'Emploi du Temps Hebdomadaire', 'Weekly Timetable')}
+                    </h1>
+                    <p className="text-[10.5px] font-bold text-[#C89216]">
+                      {tr('أكاديمية سامي — السنة الدراسية 2025 / 2026', 'Samy Academy — Année Académique 2025 / 2026', 'Samy Academy — Academic Year 2025 / 2026')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className={cn("text-[10px] font-bold text-slate-600 space-y-0.5", isRTL ? "text-left" : "text-right")}>
+                  <p>
+                    {tr('تاريخ الإصدار:', 'Édition du:', 'Issued on:')} {new Date().toLocaleDateString(dateLocale)}
+                  </p>
+                  <p className="text-[9.5px] text-slate-500">
+                    {totalSessionsCount} {tr('حصص مبرمجة', 'Séances programmées', 'Scheduled sessions')}
+                    {(filterClassId !== 'all' || filterTeacherName !== 'all' || filterRoom !== 'all') && (
+                      <span>
+                        {' '}•{' '}
+                        {[
+                          filterClassId !== 'all' ? filterClassId : null,
+                          filterTeacherName !== 'all' ? filterTeacherName : null,
+                          filterRoom !== 'all' ? formatRoom(filterRoom) : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' / ')}
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Exact Timetable Section Grid */}
+              <table className="w-full border-collapse table-fixed">
+                <thead>
+                  <tr className="bg-[#0B285C] text-white divide-x divide-white/15 border-b border-[#0B285C]">
+                    <th className="w-24 bg-[#09214D] p-2 text-center text-[10px] font-black uppercase tracking-wider">
+                      <div className="flex items-center justify-center gap-1 text-amber-300">
+                        <Clock size={12} />
+                        <span>{tr('التوقيت', 'Créneaux', 'Time Slots')}</span>
+                      </div>
+                    </th>
+                    {config.days.map((day) => (
+                      <th key={day} className="p-2 text-center text-[10px] font-black uppercase tracking-wider">
+                        <div className="flex items-center justify-center gap-1">
+                          <Calendar size={11} className="text-[#C89216]" />
+                          <span>{formatDay(day)}</span>
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {config.timeSlots.map((timeSlot) => (
+                    <tr key={timeSlot} className="divide-x divide-slate-200" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                      <td className={cn("p-1.5 bg-slate-50 font-mono text-[9.5px] font-black text-slate-700 text-center align-middle border-slate-300", isRTL ? "border-l" : "border-r")}>
+                        <span dir="ltr" className="bg-white px-1.5 py-0.5 rounded-lg border border-slate-200 inline-block">
+                          {timeSlot}
+                        </span>
+                      </td>
+
+                      {config.days.map((day) => {
+                        const cellKey = `${day}_${timeSlot}`;
+                        const cell = config.cells[cellKey];
+                        const hasContent = cell && (cell.className || cell.subject);
+                        const isMatched = matchesFilter(cell);
+
+                        return (
+                          <td
+                            key={cellKey}
+                            className={cn(
+                              "p-1 align-top h-[58px]",
+                              !isMatched && "opacity-25 grayscale"
+                            )}
+                          >
+                            {hasContent ? (
+                              <div
+                                style={{
+                                  borderColor: '#cbd5e1',
+                                  borderWidth: '1px',
+                                  borderStyle: 'solid',
+                                  ...(isRTL
+                                    ? { borderRightWidth: '4px', borderRightColor: cell.color || '#2563eb' }
+                                    : { borderLeftWidth: '4px', borderLeftColor: cell.color || '#2563eb' }),
+                                }}
+                                className="h-full w-full rounded-lg bg-white p-1.5 flex flex-col justify-between"
+                              >
+                                <div>
+                                  <div className="flex items-start justify-between gap-1 mb-0.5">
+                                    <span className="font-black text-[9px] text-slate-900 leading-tight break-words">
+                                      {cell.subject || cell.className}
+                                    </span>
+                                    {cell.room && (
+                                      <span className="text-[7.5px] font-extrabold px-1 py-0.5 bg-slate-100 text-slate-700 rounded shrink-0 border border-slate-200 leading-none">
+                                        {formatRoom(cell.room)}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {cell.className && cell.className !== cell.subject && (
+                                    <p className="text-[8px] font-bold text-slate-600 leading-tight mb-0.5 break-words">
+                                      {cell.className}
+                                    </p>
+                                  )}
+
+                                  {cell.teacherName && (
+                                    <div className="flex items-center gap-1 text-[8px] font-semibold text-slate-500">
+                                      <GraduationCap size={10} className="text-[#0B285C] shrink-0" />
+                                      <span className="break-words">{cell.teacherName}</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {cell.note && (
+                                  <div className="mt-1 pt-0.5 border-t border-slate-100 text-[7.5px] text-slate-400 italic break-words">
+                                    {cell.note}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="h-full min-h-[48px] w-full rounded-lg border border-dashed border-slate-200 bg-slate-50/30" />
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
