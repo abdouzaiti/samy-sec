@@ -282,6 +282,17 @@ export function Timetable() {
     }
   };
 
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.id = 'timetable-print-page-style';
+    style.media = 'print';
+    style.textContent = '@page { size: A4 landscape; margin: 8mm; }';
+    document.head.appendChild(style);
+    return () => {
+      style.remove();
+    };
+  }, []);
+
   const handlePrint = () => {
     window.print();
   };
@@ -477,40 +488,44 @@ export function Timetable() {
       </div>
 
       {/* Main Interactive Excel-Style Timetable Grid */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+      <div
+        id="print-timetable-section"
+        dir={isRTL ? 'rtl' : 'ltr'}
+        className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden print:rounded-2xl print:border-slate-300 print:overflow-visible"
+      >
         {/* Printable Official Header (Visible on print only) */}
-        <div className="hidden print:flex items-center justify-between p-6 border-b border-slate-300">
-          <div className="flex items-center gap-4">
-            <img src="/logo.png" alt="Samy Academy Logo" className="h-16 w-auto object-contain" />
+        <div className="hidden print:flex items-center justify-between px-5 py-3.5 border-b-2 border-primary bg-white">
+          <div className="flex items-center gap-3.5">
+            <img src="/logo.png" alt="Samy Academy Logo" className="h-12 w-auto object-contain" />
             <div>
-              <h1 className="text-xl font-black uppercase tracking-wider text-slate-900">{tr('جدول التوقيت الأسبوعي', 'Emploi du Temps Hebdomadaire', 'Weekly Timetable')}</h1>
-              <p className="text-xs font-semibold text-slate-500">{tr('أكاديمية سامي — السنة الدراسية 2025 / 2026', 'Samy Academy — Année Académique 2025 / 2026', 'Samy Academy — Academic Year 2025 / 2026')}</p>
+              <h1 className="text-lg font-black uppercase tracking-wide text-primary">{tr('جدول التوقيت الأسبوعي', 'Emploi du Temps Hebdomadaire', 'Weekly Timetable')}</h1>
+              <p className="text-[11px] font-bold text-accent">{tr('أكاديمية سامي — السنة الدراسية 2025 / 2026', 'Samy Academy — Année Académique 2025 / 2026', 'Samy Academy — Academic Year 2025 / 2026')}</p>
             </div>
           </div>
-          <div className={cn("text-xs font-bold text-slate-600", isRTL ? "text-left" : "text-right")}>
+          <div className={cn("text-[11px] font-bold text-slate-600", isRTL ? "text-left" : "text-right")}>
             <p>{tr('تاريخ الإصدار:', 'Édition du:', 'Issued on:')} {new Date().toLocaleDateString(dateLocale)}</p>
-            <p className="text-[11px] text-slate-400">{tr('الجدول الرسمي للدروس والحصص', 'Planning officiel des cours & séances', 'Official courses & sessions schedule')}</p>
+            <p className="text-[10px] text-slate-400">{tr('الجدول الرسمي للدروس والحصص', 'Planning officiel des cours & séances', 'Official courses & sessions schedule')}</p>
           </div>
         </div>
 
-        <div className="overflow-x-auto w-full">
-          <table className="w-full border-collapse min-w-[900px]">
+        <div className="overflow-x-auto w-full print:overflow-visible">
+          <table className="w-full border-collapse min-w-[900px] print:min-w-0 print:w-full print:table-fixed">
             {/* Table Header: Days of the week */}
             <thead>
               <tr className="bg-primary text-white divide-x divide-white/10 border-b border-primary">
                 {/* Time slot column title */}
-                <th className={cn("p-3.5 text-center text-xs font-black uppercase tracking-wider w-36 bg-[#09214D] sticky z-20", isRTL ? "right-0" : "left-0")}>
+                <th className={cn("p-3.5 text-center text-xs font-black uppercase tracking-wider w-36 bg-[#09214D] sticky z-20 print:static print:w-28 print:p-2 print:text-[10px]", isRTL ? "right-0" : "left-0")}>
                   <div className="flex items-center justify-center gap-1.5 text-amber-300">
-                    <Clock size={14} />
+                    <Clock size={14} className="print:w-3 print:h-3" />
                     <span>{tr('التوقيت', 'Créneaux', 'Time Slots')}</span>
                   </div>
                 </th>
 
                 {/* Day Columns */}
                 {config.days.map((day) => (
-                  <th key={day} className="p-3.5 text-center text-xs font-black uppercase tracking-wider min-w-[150px]">
+                  <th key={day} className="p-3.5 text-center text-xs font-black uppercase tracking-wider min-w-[150px] print:min-w-0 print:p-2 print:text-[10px]">
                     <div className="flex items-center justify-center gap-1.5">
-                      <Calendar size={13} className="text-accent" />
+                      <Calendar size={13} className="text-accent print:w-3 print:h-3" />
                       <span>{formatDay(day)}</span>
                     </div>
                   </th>
@@ -523,9 +538,9 @@ export function Timetable() {
               {config.timeSlots.map((timeSlot) => (
                 <tr key={timeSlot} className="hover:bg-slate-50/50 transition-colors divide-x divide-slate-200 group/row">
                   {/* Sticky Time Slot Pill with delete button */}
-                  <td className={cn("p-3 bg-slate-50 font-mono text-xs font-black text-slate-700 text-center sticky z-10 border-slate-300 shadow-xs", isRTL ? "right-0 border-l" : "left-0 border-r")}>
+                  <td className={cn("p-3 bg-slate-50 font-mono text-xs font-black text-slate-700 text-center sticky z-10 border-slate-300 shadow-xs print:static print:p-1.5 print:text-[10px] print:shadow-none", isRTL ? "right-0 border-l" : "left-0 border-r")}>
                     <div className="flex flex-col items-center justify-center gap-1 group/ts relative">
-                      <span dir="ltr" className="bg-white px-2.5 py-1 rounded-xl border border-slate-200 shadow-2xs">
+                      <span dir="ltr" className="bg-white px-2.5 py-1 rounded-xl border border-slate-200 shadow-2xs print:px-1.5 print:py-0.5 print:rounded-lg print:shadow-none">
                         {timeSlot}
                       </span>
                       {config.timeSlots.length > 2 && (
@@ -556,9 +571,9 @@ export function Timetable() {
                           handleOpenEditModal(day, timeSlot);
                         }}
                         className={cn(
-                          "p-2.5 align-top transition-all cursor-pointer relative min-h-[90px] h-[95px]",
+                          "p-2.5 align-top transition-all cursor-pointer relative min-h-[90px] h-[95px] print:p-1 print:h-auto print:min-h-[62px]",
                           !isMatched && "opacity-30 grayscale",
-                          isSelected && "ring-2 ring-primary ring-inset z-10",
+                          isSelected && "ring-2 ring-primary ring-inset z-10 print:ring-0",
                           !hasContent && "hover:bg-slate-100/70 border-dashed"
                         )}
                       >
@@ -566,18 +581,18 @@ export function Timetable() {
                           <div 
                             style={{ [isRTL ? 'borderRightColor' : 'borderLeftColor']: cell.color || '#2563eb' }}
                             className={cn(
-                              "h-full w-full rounded-xl bg-white border border-slate-200/80 p-2.5 flex flex-col justify-between shadow-2xs hover:shadow-md transition-all group/card relative",
+                              "h-full w-full rounded-xl bg-white border border-slate-200/80 p-2.5 flex flex-col justify-between shadow-2xs hover:shadow-md transition-all group/card relative print:p-1.5 print:rounded-lg print:shadow-none print:border-slate-300",
                               isRTL ? "border-r-4" : "border-l-4"
                             )}
                           >
                             <div>
                               {/* Top Bar: Subject & Room */}
-                              <div className="flex items-center justify-between gap-1 mb-1">
-                                <span className="font-black text-[11px] text-slate-900 truncate leading-snug">
+                              <div className="flex items-center justify-between gap-1 mb-1 print:mb-0.5">
+                                <span className="font-black text-[11px] text-slate-900 truncate leading-snug print:text-[9.5px] print:whitespace-normal">
                                   {cell.subject || cell.className}
                                 </span>
                                 {cell.room && (
-                                  <span className="text-[9px] font-extrabold px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded-md shrink-0 border border-slate-200">
+                                  <span className="text-[9px] font-extrabold px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded-md shrink-0 border border-slate-200 print:text-[8px] print:px-1 print:py-0">
                                     {formatRoom(cell.room)}
                                   </span>
                                 )}
@@ -585,15 +600,15 @@ export function Timetable() {
 
                               {/* Class Name (if different from subject) */}
                               {cell.className && cell.className !== cell.subject && (
-                                <p className="text-[10px] font-bold text-slate-600 truncate mb-1">
+                                <p className="text-[10px] font-bold text-slate-600 truncate mb-1 print:text-[8.5px] print:mb-0.5 print:whitespace-normal">
                                   {cell.className}
                                 </p>
                               )}
 
                               {/* Teacher Name */}
                               {cell.teacherName && (
-                                <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-500 truncate">
-                                  <GraduationCap size={12} className="text-primary shrink-0" />
+                                <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-500 truncate print:text-[8.5px]">
+                                  <GraduationCap size={12} className="text-primary shrink-0 print:w-2.5 print:h-2.5" />
                                   <span className="truncate">{cell.teacherName}</span>
                                 </div>
                               )}
@@ -601,7 +616,7 @@ export function Timetable() {
 
                             {/* Note / Tag */}
                             {cell.note && (
-                              <div className="mt-1 pt-1 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-400">
+                              <div className="mt-1 pt-1 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-400 print:mt-0.5 print:pt-0.5 print:text-[8px]">
                                 <span className="italic truncate">{cell.note}</span>
                               </div>
                             )}
@@ -631,9 +646,9 @@ export function Timetable() {
                             </div>
                           </div>
                         ) : (
-                          <div className="h-full w-full rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300 hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all p-2 group/empty">
-                            <Plus size={16} className="transition-transform group-hover/empty:scale-125" />
-                            <span className="text-[10px] font-bold mt-1 opacity-0 group-hover/empty:opacity-100 transition-opacity">
+                          <div className="h-full w-full rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300 hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all p-2 group/empty print:border-slate-200/70 print:rounded-lg">
+                            <Plus size={16} className="transition-transform group-hover/empty:scale-125 print:hidden" />
+                            <span className="text-[10px] font-bold mt-1 opacity-0 group-hover/empty:opacity-100 transition-opacity print:hidden">
                               {tr('إضافة', 'Ajouter', 'Add')}
                             </span>
                           </div>
